@@ -1,18 +1,24 @@
 import {
-  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES, MERGEABLE_DOCUMENT_NAMES,
+  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
   MERGE_FOLDER_NAME, ARMOR_SUBTYPES, ITEM_CATEGORY_ORDER
 } from "./constants.js";
-
-const NO_FOLDER_KEY = "__no-folder__";
 
 const SPELL_CATEGORY_ORDER = ["Cantrips", "1st Level", "2nd Level", "3rd Level", "4th Level", "5th Level", "6th Level", "7th Level", "8th Level", "9th Level"];
 
 /**
- * A document's in-compendium category: a human-readable folder name plus a numeric key
- * to sort those folders by (since folder names like "CR 1/2" don't sort correctly as
- * plain strings). Returning null means "no folder — leave it at the compendium's top level."
- * @typedef {{label: string, sortKey: number}|null} Category
+ * A document's in-compendium category: a human-readable folder name plus a sort key
+ * (number or string) to order those folders by. Returning null means "no folder — leave
+ * it at the compendium's top level."
+ * @typedef {{label: string, sortKey: number|string}|null} Category
  */
+
+/** All compendiums of the given document type ("Item" or "Actor"), visible to the current user. */
+export function getPacksFor(documentName) {
+  return game.packs
+    .filter(pack => pack.documentName === documentName)
+    .map(pack => ({ id: pack.metadata.id, label: `${pack.title} (${pack.metadata.packageName})` }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
 
 /** Which in-compendium folder a merged Item belongs to: Weapons/Armor/Equipment/Consumables/Tools/Loot/Containers. */
 function itemCategoryFor(doc) {
@@ -41,64 +47,24 @@ function crLabel(cr) {
   return `CR ${cr}`;
 }
 
-/** Which in-compendium folder a merged Monster belongs to: one per Challenge Rating. */
-function monsterCategoryFor(doc) {
+/** Monster category: one folder per Challenge Rating. */
+function monsterCRCategoryFor(doc) {
   const cr = doc.system?.details?.cr;
   if (cr === null || cr === undefined) return null;
   return { label: crLabel(cr), sortKey: Number(cr) };
 }
 
+/** Monster category: one folder per creature type (Aberration, Beast, Humanoid, ...). */
+function monsterTypeCategoryFor(doc) {
+  const type = doc.system?.details?.type?.value;
+  if (!type) return null;
+  const label = type.charAt(0).toUpperCase() + type.slice(1);
+  return { label, sortKey: label };
+}
+
 /** Vehicles aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
 function vehicleCategoryFor() {
   return null;
-}
-
-/** Climb from a folder up to its top-most ancestor (a folder with no parent of its own). */
-function getRootFolder(folder) {
-  let current = folder;
-  while (current?.folder) current = current.folder;
-  return current;
-}
-
-/**
- * Every Item or Actor compendium, grouped by its top-level (root) Compendium folder —
- * climbing past any nested sub-folders (e.g. a "Legacy Content" folder holding separate
- * "Items & Spells" and "Monsters" sub-folders) so priority is set once per source, not
- * per sub-folder. Compendiums with no parent folder are grouped into a single "(No
- * Folder)" bucket. Every pack anywhere under a root folder — no matter how deeply nested
- * — ends up in that root's group, so checking one folder sweeps in everything inside it.
- * @returns {{id: string, label: string, packs: {id: string, label: string}[]}[]}
- */
-export function getSourceFolders() {
-  const groups = new Map();
-
-  for (const pack of game.packs.filter(p => MERGEABLE_DOCUMENT_NAMES.includes(p.documentName))) {
-    const root = pack.folder ? getRootFolder(pack.folder) : null;
-    const key = root?.id ?? NO_FOLDER_KEY;
-    if (!groups.has(key)) {
-      groups.set(key, {
-        id: key,
-        label: root?.name ?? game.i18n.localize("COMPENDIUM-MERGER.App.NoFolder"),
-        packs: []
-      });
-    }
-    groups.get(key).packs.push({
-      id: pack.metadata.id,
-      label: `${pack.title} (${pack.metadata.packageName})`
-    });
-  }
-
-  for (const group of groups.values()) {
-    group.packs.sort((a, b) => a.label.localeCompare(b.label));
-  }
-
-  const result = [...groups.values()];
-  result.sort((a, b) => {
-    if (a.id === NO_FOLDER_KEY) return 1;
-    if (b.id === NO_FOLDER_KEY) return -1;
-    return a.label.localeCompare(b.label);
-  });
-  return result;
 }
 
 /** The "Compendium Merger" compendium folder, created on first use. */
@@ -117,11 +83,17 @@ async function getOrCreateMergedPack(type, label) {
   return CompendiumCollection.createCompendium({ type, label, folder: folder.id });
 }
 
+/** Compare two category sort keys: numeric subtraction for numbers (e.g. CR, spell level), alphabetical otherwise (e.g. creature type, item category name). */
+function compareSortKeys(a, b) {
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return String(a).localeCompare(String(b));
+}
+
 /**
  * Wipe every document and folder out of a compendium pack, then insert fresh copies of
  * the given documents, organized into in-compendium folders per `categoryOf(doc)` (e.g.
- * spell level, monster CR, or weapon/armor/equipment/...). Documents whose category is
- * null are left uncategorized at the compendium's top level.
+ * spell level, monster CR/type, or weapon/armor/equipment/...). Documents whose category
+ * is null are left uncategorized at the compendium's top level.
  * @param {CompendiumCollection} pack
  * @param {object[]} documents
  * @param {(doc: object) => Category} categoryOf
@@ -144,7 +116,7 @@ async function rebuildPack(pack, documents, categoryOf) {
     if (category) categoriesByLabel.set(category.label, category.sortKey);
   }
   const orderedLabels = [...categoriesByLabel.entries()]
-    .sort((a, b) => a[1] - b[1])
+    .sort((a, b) => compareSortKeys(a[1], b[1]))
     .map(([label]) => label);
 
   const folderIdByLabel = new Map();
@@ -166,26 +138,14 @@ async function rebuildPack(pack, documents, categoryOf) {
   }
 }
 
-/**
- * Run a full-rebuild merge: scan the given source compendiums in priority order (first =
- * highest priority), bucket Items, Spells, Monsters, and Vehicles by normalized name, and
- * rebuild the four "Merged ..." world compendiums from the result. Anything else (Item
- * feats/classes/subclasses/backgrounds/species, Actor characters/groups, ...) is skipped
- * for now.
- * @param {string[]} orderedPackIds source pack ids, highest priority first
- * @param {(update: {stage: string, packId?: string}) => void} [onProgress]
- * @returns {Promise<{scanned: number, items: number, spells: number, monsters: number, vehicles: number, skipped: number, packsRead: number}>}
- */
-export async function runMerge(orderedPackIds, onProgress) {
-  const itemsByKey = new Map();
-  const spellsByKey = new Map();
-  const monstersByKey = new Map();
-  const vehiclesByKey = new Map();
+/** Scan the given packs in priority order, keeping the first (highest-priority) document per normalized name that passes `matchesType`. */
+async function collectByKey(packIds, matchesType, onProgress) {
+  const byKey = new Map();
   let scanned = 0;
   let skipped = 0;
   let packsRead = 0;
 
-  for (const packId of orderedPackIds) {
+  for (const packId of packIds) {
     const pack = game.packs.get(packId);
     if (!pack) continue;
 
@@ -195,25 +155,41 @@ export async function runMerge(orderedPackIds, onProgress) {
 
     for (const doc of documents) {
       scanned++;
-      let bucket = null;
-      if (pack.documentName === "Item") {
-        if (SPELL_TYPES.includes(doc.type)) bucket = spellsByKey;
-        else if (ITEM_TYPES.includes(doc.type)) bucket = itemsByKey;
-      } else if (pack.documentName === "Actor") {
-        if (MONSTER_TYPES.includes(doc.type)) bucket = monstersByKey;
-        else if (VEHICLE_TYPES.includes(doc.type)) bucket = vehiclesByKey;
-      }
-
-      if (!bucket) {
+      if (!matchesType(doc)) {
         skipped++;
         continue;
       }
-
       const key = doc.name.trim().toLowerCase();
-      if (bucket.has(key)) continue; // a higher-priority pack already claimed this name
-      bucket.set(key, doc);
+      if (byKey.has(key)) continue; // a higher-priority pack already claimed this name
+      byKey.set(key, doc);
     }
   }
+
+  return { byKey, scanned, skipped, packsRead };
+}
+
+/**
+ * Run a full-rebuild merge. Each category (Items, Spells, Monsters, Vehicles) has its own
+ * independent priority-ordered list of source compendiums — a source that's great for
+ * spells isn't necessarily the one you want winning for monsters, so priority is set per
+ * category rather than once globally. Rebuilds all four "Merged ..." world compendiums
+ * from the result.
+ * @param {object} params
+ * @param {string[]} [params.itemPackIds] highest priority first
+ * @param {string[]} [params.spellPackIds] highest priority first
+ * @param {string[]} [params.monsterPackIds] highest priority first
+ * @param {string[]} [params.vehiclePackIds] highest priority first
+ * @param {"cr"|"type"} [params.monsterSortMode]
+ * @param {(update: {stage: string, packId?: string}) => void} [onProgress]
+ * @returns {Promise<{scanned: number, items: number, spells: number, monsters: number, vehicles: number, skipped: number, packsRead: number}>}
+ */
+export async function runMerge({
+  itemPackIds = [], spellPackIds = [], monsterPackIds = [], vehiclePackIds = [], monsterSortMode = "cr"
+} = {}, onProgress) {
+  const items = await collectByKey(itemPackIds, doc => ITEM_TYPES.includes(doc.type), onProgress);
+  const spells = await collectByKey(spellPackIds, doc => SPELL_TYPES.includes(doc.type), onProgress);
+  const monsters = await collectByKey(monsterPackIds, doc => MONSTER_TYPES.includes(doc.type), onProgress);
+  const vehicles = await collectByKey(vehiclePackIds, doc => VEHICLE_TYPES.includes(doc.type), onProgress);
 
   onProgress?.({ stage: "writing" });
   const itemsPack = await getOrCreateMergedPack("Item", "Merged Items");
@@ -221,20 +197,22 @@ export async function runMerge(orderedPackIds, onProgress) {
   const monstersPack = await getOrCreateMergedPack("Actor", "Merged Monsters");
   const vehiclesPack = await getOrCreateMergedPack("Actor", "Merged Vehicles");
 
-  await rebuildPack(itemsPack, [...itemsByKey.values()], itemCategoryFor);
-  await rebuildPack(spellsPack, [...spellsByKey.values()], spellCategoryFor);
-  await rebuildPack(monstersPack, [...monstersByKey.values()], monsterCategoryFor);
-  await rebuildPack(vehiclesPack, [...vehiclesByKey.values()], vehicleCategoryFor);
+  const monsterCategoryFor = monsterSortMode === "type" ? monsterTypeCategoryFor : monsterCRCategoryFor;
+
+  await rebuildPack(itemsPack, [...items.byKey.values()], itemCategoryFor);
+  await rebuildPack(spellsPack, [...spells.byKey.values()], spellCategoryFor);
+  await rebuildPack(monstersPack, [...monsters.byKey.values()], monsterCategoryFor);
+  await rebuildPack(vehiclesPack, [...vehicles.byKey.values()], vehicleCategoryFor);
 
   onProgress?.({ stage: "done" });
 
   return {
-    scanned,
-    items: itemsByKey.size,
-    spells: spellsByKey.size,
-    monsters: monstersByKey.size,
-    vehicles: vehiclesByKey.size,
-    skipped,
-    packsRead
+    scanned: items.scanned + spells.scanned + monsters.scanned + vehicles.scanned,
+    skipped: items.skipped + spells.skipped + monsters.skipped + vehicles.skipped,
+    packsRead: items.packsRead + spells.packsRead + monsters.packsRead + vehicles.packsRead,
+    items: items.byKey.size,
+    spells: spells.byKey.size,
+    monsters: monsters.byKey.size,
+    vehicles: vehicles.byKey.size
   };
 }

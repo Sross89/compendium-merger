@@ -1,7 +1,11 @@
 export const MODULE_ID = "compendium-merger";
 
 export const SETTINGS = {
-  SOURCE_ORDER: "sourceOrder"
+  ITEM_SOURCE_ORDER: "itemSourceOrder",
+  SPELL_SOURCE_ORDER: "spellSourceOrder",
+  MONSTER_SOURCE_ORDER: "monsterSourceOrder",
+  VEHICLE_SOURCE_ORDER: "vehicleSourceOrder",
+  MONSTER_SORT_MODE: "monsterSortMode"
 };
 
 /** dnd5e Item subtypes handled by the "Merged Items" bucket. More types (Species, Class, Feat, ...) may come later. */
@@ -13,11 +17,8 @@ export const SPELL_TYPES = ["spell"];
 /** dnd5e Actor subtypes handled by the "Merged Monsters" bucket. */
 export const MONSTER_TYPES = ["npc"];
 
-/** dnd5e Actor subtypes handled by the "Merged Vehicles" bucket. */
+/** dnd5e Actor subtypes handled by the "Merged Vehicles" bucket. Player characters ("character") and encounter "group" actors are intentionally excluded. */
 export const VEHICLE_TYPES = ["vehicle"];
-
-/** Compendium document types this module scans for source content. Player characters ("character") and encounter "group" actors are intentionally excluded. */
-export const MERGEABLE_DOCUMENT_NAMES = ["Item", "Actor"];
 
 export const MERGE_FOLDER_NAME = "Compendium Merger";
 

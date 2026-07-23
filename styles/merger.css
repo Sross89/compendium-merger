@@ -40,26 +40,28 @@
   flex: 0 0 auto;
 }
 
-.compendium-merger .cm-source-label-group {
+.compendium-merger .cm-source-label {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   min-width: 0;
 }
 
-.compendium-merger .cm-source-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.compendium-merger .form-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
-.compendium-merger .cm-source-packs {
-  font-size: 0.8em;
-  opacity: 0.7;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.compendium-merger .form-group label {
+  flex: 0 0 45%;
+}
+
+.compendium-merger .form-group select {
+  flex: 1;
 }
 
 .compendium-merger .cm-move {

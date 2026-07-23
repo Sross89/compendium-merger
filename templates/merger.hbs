@@ -1,27 +1,84 @@
 <div class="compendium-merger-form">
 
 <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.ScopeHint"}}</p>
+<p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.PriorityHint"}}</p>
 
 <fieldset>
-  <legend>{{localize "COMPENDIUM-MERGER.App.SourcesLegend"}}</legend>
-
-  {{#if hasSources}}
+  <legend>{{localize "COMPENDIUM-MERGER.App.ItemsLegend"}}</legend>
+  {{#if items.hasSources}}
     <div class="cm-source-list">
-      {{#each order as |entry|}}
+      {{#each items.order as |entry|}}
         <div class="cm-source-row">
-          <input type="checkbox" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
-          <span class="cm-source-label-group">
-            <span class="cm-source-label">{{entry.label}}</span>
-            <span class="cm-source-packs">{{entry.packsLabel}}</span>
-          </span>
-          <button type="button" class="cm-move" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
-          <button type="button" class="cm-move" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+          <input type="checkbox" data-category="items" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-category="items" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-category="items" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
         </div>
       {{/each}}
     </div>
-    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.PriorityHint"}}</p>
   {{else}}
-    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoSources"}}</p>
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
+  {{/if}}
+</fieldset>
+
+<fieldset>
+  <legend>{{localize "COMPENDIUM-MERGER.App.SpellsLegend"}}</legend>
+  {{#if spells.hasSources}}
+    <div class="cm-source-list">
+      {{#each spells.order as |entry|}}
+        <div class="cm-source-row">
+          <input type="checkbox" data-category="spells" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-category="spells" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-category="spells" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
+  {{/if}}
+</fieldset>
+
+<fieldset>
+  <legend>{{localize "COMPENDIUM-MERGER.App.MonstersLegend"}}</legend>
+  <div class="form-group">
+    <label>{{localize "COMPENDIUM-MERGER.App.MonsterSortMode"}}</label>
+    <select name="monsterSortMode">
+      <option value="cr">{{localize "COMPENDIUM-MERGER.App.MonsterSortByCR"}}</option>
+      <option value="type">{{localize "COMPENDIUM-MERGER.App.MonsterSortByType"}}</option>
+    </select>
+  </div>
+  {{#if monsters.hasSources}}
+    <div class="cm-source-list">
+      {{#each monsters.order as |entry|}}
+        <div class="cm-source-row">
+          <input type="checkbox" data-category="monsters" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-category="monsters" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-category="monsters" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoActorSources"}}</p>
+  {{/if}}
+</fieldset>
+
+<fieldset>
+  <legend>{{localize "COMPENDIUM-MERGER.App.VehiclesLegend"}}</legend>
+  {{#if vehicles.hasSources}}
+    <div class="cm-source-list">
+      {{#each vehicles.order as |entry|}}
+        <div class="cm-source-row">
+          <input type="checkbox" data-category="vehicles" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-category="vehicles" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-category="vehicles" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoActorSources"}}</p>
   {{/if}}
 </fieldset>
 
