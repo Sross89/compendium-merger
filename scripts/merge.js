@@ -20,6 +20,35 @@ export function getPacksFor(documentName) {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
+/** Cache of pack id -> lightweight index (just enough to check document types), so toggling the content filter repeatedly doesn't refetch. */
+const packTypeIndexCache = new Map();
+
+async function getPackTypeIndex(packId) {
+  if (packTypeIndexCache.has(packId)) return packTypeIndexCache.get(packId);
+  const pack = game.packs.get(packId);
+  const index = pack ? await pack.getIndex({ fields: ["type"] }) : [];
+  packTypeIndexCache.set(packId, index);
+  return index;
+}
+
+/**
+ * Same as getPacksFor(), but filtered down to only compendiums that actually contain at
+ * least one document whose type is in `types` (e.g. only Item compendiums that have a
+ * weapon/equipment/consumable/tool/loot/container in them).
+ * @param {"Item"|"Actor"} documentName
+ * @param {string[]} types
+ * @returns {Promise<{id: string, label: string}[]>}
+ */
+export async function getPacksWithType(documentName, types) {
+  const packs = getPacksFor(documentName);
+  const results = [];
+  for (const pack of packs) {
+    const index = await getPackTypeIndex(pack.id);
+    if (index.some(entry => types.includes(entry.type))) results.push(pack);
+  }
+  return results;
+}
+
 /** Which in-compendium folder a merged Item belongs to: Weapons/Armor/Equipment/Consumables/Tools/Loot/Containers. */
 function itemCategoryFor(doc) {
   let label = null;
@@ -74,13 +103,25 @@ async function getOrCreateMergeFolder() {
   return Folder.create({ name: MERGE_FOLDER_NAME, type: "Compendium", color: "#5a1e1e" });
 }
 
-/** Find an existing merged pack of the given document type by label, or create a fresh one inside the merge folder. */
+/**
+ * Find an existing merged pack of the given document type by label, or create a fresh
+ * one, ensuring it lives inside the merge folder either way. Compendium pack folder
+ * membership is stored in the pack's own configuration (not the creation metadata), so
+ * it has to be set via a separate configure() call after createCompendium() — and is
+ * re-checked even for an already-existing pack in case it was ever left mis-placed.
+ */
 async function getOrCreateMergedPack(type, label) {
-  const existing = game.packs.find(pack => pack.documentName === type && pack.metadata.label === label && pack.metadata.packageType === "world");
-  if (existing) return existing;
+  const mergeFolder = await getOrCreateMergeFolder();
 
-  const folder = await getOrCreateMergeFolder();
-  return CompendiumCollection.createCompendium({ type, label, folder: folder.id });
+  const existing = game.packs.find(pack => pack.documentName === type && pack.metadata.label === label && pack.metadata.packageType === "world");
+  if (existing) {
+    if (existing.folder?.id !== mergeFolder.id) await existing.configure({ folder: mergeFolder.id });
+    return existing;
+  }
+
+  const pack = await CompendiumCollection.createCompendium({ type, label });
+  await pack.configure({ folder: mergeFolder.id });
+  return pack;
 }
 
 /** Compare two category sort keys: numeric subtraction for numbers (e.g. CR, spell level), alphabetical otherwise (e.g. creature type, item category name). */

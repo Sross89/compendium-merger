@@ -3,6 +3,11 @@
 <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.ScopeHint"}}</p>
 <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.PriorityHint"}}</p>
 
+<label class="cm-filter-toggle">
+  <input type="checkbox" name="filterEmptySources" {{#if filterEmptySources}}checked{{/if}} />
+  {{localize "COMPENDIUM-MERGER.App.FilterEmptySources"}}
+</label>
+
 <fieldset>
   <legend>{{localize "COMPENDIUM-MERGER.App.ItemsLegend"}}</legend>
   {{#if items.hasSources}}

@@ -3,6 +3,7 @@
   "COMPENDIUM-MERGER.App.SidebarButton": "Merge Compendiums",
   "COMPENDIUM-MERGER.App.ScopeHint": "Merges Item and Actor compendiums, and only Items/Spells/Monsters/Vehicles for now — Item feats/classes/subclasses/backgrounds/species and Actor characters/groups are left alone and skipped. Merged Items are sorted into Weapons/Armor/Equipment/Consumables/Tools/Loot/Containers folders, Merged Spells into a folder per spell level, and Merged Monsters into a folder per Challenge Rating or creature type (your choice below). Merged Vehicles aren't sorted into folders yet.",
   "COMPENDIUM-MERGER.App.PriorityHint": "Each category below has its own independent list of source compendiums and priority order — a source that's great for spells isn't necessarily the one you want winning for monsters. Check the ones to include per category and order them by priority: if the same name shows up in more than one checked compendium within a category, the one closer to the top wins. Drag isn't supported — use the arrows to reorder.",
+  "COMPENDIUM-MERGER.App.FilterEmptySources": "Only show compendiums that contain matching content (slower to load, but hides irrelevant packs)",
   "COMPENDIUM-MERGER.App.ItemsLegend": "Items",
   "COMPENDIUM-MERGER.App.SpellsLegend": "Spells",
   "COMPENDIUM-MERGER.App.MonstersLegend": "Monsters",

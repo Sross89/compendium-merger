@@ -1,14 +1,14 @@
-import { MODULE_ID, SETTINGS } from "../constants.js";
-import { getPacksFor, runMerge } from "../merge.js";
+import { MODULE_ID, SETTINGS, ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES } from "../constants.js";
+import { getPacksFor, getPacksWithType, runMerge } from "../merge.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /** The four independently-ordered source categories. */
 const CATEGORIES = {
-  items: { settingsKey: SETTINGS.ITEM_SOURCE_ORDER, documentName: "Item" },
-  spells: { settingsKey: SETTINGS.SPELL_SOURCE_ORDER, documentName: "Item" },
-  monsters: { settingsKey: SETTINGS.MONSTER_SOURCE_ORDER, documentName: "Actor" },
-  vehicles: { settingsKey: SETTINGS.VEHICLE_SOURCE_ORDER, documentName: "Actor" }
+  items: { settingsKey: SETTINGS.ITEM_SOURCE_ORDER, documentName: "Item", types: ITEM_TYPES },
+  spells: { settingsKey: SETTINGS.SPELL_SOURCE_ORDER, documentName: "Item", types: SPELL_TYPES },
+  monsters: { settingsKey: SETTINGS.MONSTER_SOURCE_ORDER, documentName: "Actor", types: MONSTER_TYPES },
+  vehicles: { settingsKey: SETTINGS.VEHICLE_SOURCE_ORDER, documentName: "Actor", types: VEHICLE_TYPES }
 };
 
 export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -33,10 +33,16 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
   /** Result of the last completed merge this session, or null. */
   #lastResult = null;
 
-  /** Build the current ordered source list for one category, merging saved order/checked state with whatever compendiums actually exist right now. */
-  #buildOrder(categoryId) {
-    const { settingsKey, documentName } = CATEGORIES[categoryId];
-    const available = getPacksFor(documentName);
+  /**
+   * Build the current ordered source list for one category, merging saved order/checked
+   * state with whatever compendiums actually exist right now. When the "only show
+   * compendiums with matching content" setting is on, the available list is filtered down
+   * to compendiums that actually contain at least one document of this category's type.
+   */
+  async #buildOrder(categoryId) {
+    const { settingsKey, documentName, types } = CATEGORIES[categoryId];
+    const filterEmpty = game.settings.get(MODULE_ID, SETTINGS.FILTER_EMPTY_SOURCES);
+    const available = filterEmpty ? await getPacksWithType(documentName, types) : getPacksFor(documentName);
     const saved = game.settings.get(MODULE_ID, settingsKey) ?? [];
     const savedById = new Map(saved.map(entry => [entry.id, entry]));
 
@@ -57,17 +63,19 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   async _prepareContext() {
-    const buildSection = (categoryId) => {
-      const order = this.#buildOrder(categoryId);
+    const buildSection = async (categoryId) => {
+      const order = await this.#buildOrder(categoryId);
       return { hasSources: !!order.length, order: order.map((entry, index) => ({ ...entry, index })) };
     };
 
+    const [items, spells, monsters, vehicles] = await Promise.all([
+      buildSection("items"), buildSection("spells"), buildSection("monsters"), buildSection("vehicles")
+    ]);
+
     return {
-      items: buildSection("items"),
-      spells: buildSection("spells"),
-      monsters: buildSection("monsters"),
-      vehicles: buildSection("vehicles"),
+      items, spells, monsters, vehicles,
       monsterSortMode: game.settings.get(MODULE_ID, SETTINGS.MONSTER_SORT_MODE) ?? "cr",
+      filterEmptySources: game.settings.get(MODULE_ID, SETTINGS.FILTER_EMPTY_SOURCES) ?? false,
       running: this.#running,
       result: this.#lastResult
     };
@@ -83,7 +91,7 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
     el.querySelectorAll("[data-toggle-index]").forEach(checkbox => {
       checkbox.addEventListener("change", async () => {
         const categoryId = checkbox.dataset.category;
-        const order = this.#buildOrder(categoryId);
+        const order = await this.#buildOrder(categoryId);
         const index = Number(checkbox.dataset.toggleIndex);
         order[index].checked = checkbox.checked;
         await this.#persistOrder(categoryId, order);
@@ -95,7 +103,7 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
         const categoryId = button.dataset.category;
         const index = Number(button.dataset.moveUp);
         if (index <= 0) return;
-        const order = this.#buildOrder(categoryId);
+        const order = await this.#buildOrder(categoryId);
         [order[index - 1], order[index]] = [order[index], order[index - 1]];
         await this.#persistOrder(categoryId, order);
         this.render();
@@ -106,7 +114,7 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
       button.addEventListener("click", async () => {
         const categoryId = button.dataset.category;
         const index = Number(button.dataset.moveDown);
-        const order = this.#buildOrder(categoryId);
+        const order = await this.#buildOrder(categoryId);
         if (index >= order.length - 1) return;
         [order[index], order[index + 1]] = [order[index + 1], order[index]];
         await this.#persistOrder(categoryId, order);
@@ -118,17 +126,21 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
       game.settings.set(MODULE_ID, SETTINGS.MONSTER_SORT_MODE, monsterSortSelect.value);
     });
 
+    el.querySelector('[name="filterEmptySources"]')?.addEventListener("change", async (event) => {
+      await game.settings.set(MODULE_ID, SETTINGS.FILTER_EMPTY_SOURCES, event.target.checked);
+      this.render();
+    });
+
     el.querySelector('[data-action="run-merge"]')?.addEventListener("click", () => this.#onRunMerge());
   }
 
   async #onRunMerge() {
     if (this.#running) return;
 
-    const checkedIds = (categoryId) => this.#buildOrder(categoryId).filter(entry => entry.checked).map(entry => entry.id);
-    const itemPackIds = checkedIds("items");
-    const spellPackIds = checkedIds("spells");
-    const monsterPackIds = checkedIds("monsters");
-    const vehiclePackIds = checkedIds("vehicles");
+    const checkedIds = async (categoryId) => (await this.#buildOrder(categoryId)).filter(entry => entry.checked).map(entry => entry.id);
+    const [itemPackIds, spellPackIds, monsterPackIds, vehiclePackIds] = await Promise.all([
+      checkedIds("items"), checkedIds("spells"), checkedIds("monsters"), checkedIds("vehicles")
+    ]);
 
     if (!itemPackIds.length && !spellPackIds.length && !monsterPackIds.length && !vehiclePackIds.length) {
       ui.notifications.warn(game.i18n.localize("COMPENDIUM-MERGER.Warnings.NoSourcesChecked"));

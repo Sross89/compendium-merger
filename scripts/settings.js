@@ -28,4 +28,13 @@ export function registerSettings() {
     type: String,
     default: "cr"
   });
+
+  // Whether each category's compendium list is filtered down to only compendiums that
+  // actually contain at least one document of that category's type.
+  game.settings.register(MODULE_ID, SETTINGS.FILTER_EMPTY_SOURCES, {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false
+  });
 }

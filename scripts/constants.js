@@ -5,7 +5,8 @@ export const SETTINGS = {
   SPELL_SOURCE_ORDER: "spellSourceOrder",
   MONSTER_SOURCE_ORDER: "monsterSourceOrder",
   VEHICLE_SOURCE_ORDER: "vehicleSourceOrder",
-  MONSTER_SORT_MODE: "monsterSortMode"
+  MONSTER_SORT_MODE: "monsterSortMode",
+  FILTER_EMPTY_SOURCES: "filterEmptySources"
 };
 
 /** dnd5e Item subtypes handled by the "Merged Items" bucket. More types (Species, Class, Feat, ...) may come later. */

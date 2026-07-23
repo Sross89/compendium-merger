@@ -22,6 +22,14 @@
   color: var(--color-level-warning, #a80);
 }
 
+.compendium-merger .cm-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.9em;
+}
+
 .compendium-merger .cm-source-list {
   display: flex;
   flex-direction: column;
