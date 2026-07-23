@@ -112,14 +112,17 @@ export const MERGE_FOLDER_NAME = "Compendium Merger";
 /** dnd5e system.type.value values for "equipment" items that are actually armor, not general equipment. Confirmed against installed content. */
 export const ARMOR_SUBTYPES = ["light", "medium", "heavy", "shield"];
 
-/** dnd5e system.type.value values for "loot" items that are trade goods (gems, art objects, raw commodities) rather than generic loot. Confirmed against installed content ("trade", "gem", "art", "treasure" all seen in official packs); a rare adventure-specific "material" subtype was also spotted but is left as generic Loot rather than guessed at. */
-export const TRADE_GOOD_SUBTYPES = ["art", "gem", "trade", "treasure"];
+/** dnd5e system.type.value values for "loot" items that are raw tradeable commodities (herbs, spices, cloth, and the like) rather than generic loot. Confirmed against installed content. */
+export const TRADE_GOOD_SUBTYPES = ["trade"];
+
+/** dnd5e system.type.value values for "loot" items that are valuables — art objects, gemstones, and other treasure — rather than generic loot. Confirmed against installed content. */
+export const TREASURE_SUBTYPES = ["art", "gem", "treasure"];
 
 /** In-compendium top-level folder names for "Merged Items", and the order they're created/displayed in. */
-export const ITEM_CATEGORY_ORDER = ["Weapons", "Armor", "Equipment", "Consumables", "Tools", "Trade Goods", "Loot", "Containers"];
+export const ITEM_CATEGORY_ORDER = ["Weapons", "Armor", "Equipment", "Consumables", "Tools", "Trade Goods", "Treasure", "Loot", "Containers"];
 
 /** Item categories that do NOT get a rarity sub-folder (mundane commodity buckets, not usually magic items). */
-export const NO_RARITY_CATEGORIES = ["Trade Goods", "Loot"];
+export const NO_RARITY_CATEGORIES = ["Trade Goods", "Treasure", "Loot"];
 
 /** dnd5e system.rarity values, in display order, mapped to folder labels. Blank/unset rarity is treated as "Mundane". */
 export const RARITY_LABELS = {

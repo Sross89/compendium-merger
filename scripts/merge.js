@@ -1,7 +1,7 @@
 import {
   ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
   isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc, featSubtype,
-  MERGE_FOLDER_NAME, ARMOR_SUBTYPES, TRADE_GOOD_SUBTYPES, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER,
+  MERGE_FOLDER_NAME, ARMOR_SUBTYPES, TRADE_GOOD_SUBTYPES, TREASURE_SUBTYPES, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER,
   FEAT_SUBTYPE_LABELS, FEAT_SUBTYPE_ORDER
 } from "./constants.js";
 
@@ -85,9 +85,9 @@ function raritySortKey(rarity) {
 
 /**
  * Which in-compendium folder path a merged Item belongs to. Top level is
- * Weapons/Armor/Equipment/Consumables/Tools/Trade Goods/Loot/Containers; everything
- * except Trade Goods and Loot (mundane commodity buckets) also gets a rarity
- * sub-folder (Mundane/Common/Uncommon/Rare/Very Rare/Legendary/Artifact).
+ * Weapons/Armor/Equipment/Consumables/Tools/Trade Goods/Treasure/Loot/Containers;
+ * everything except Trade Goods, Treasure, and Loot (mundane commodity buckets) also gets
+ * a rarity sub-folder (Mundane/Common/Uncommon/Rare/Very Rare/Legendary/Artifact).
  */
 function itemCategoryFor(doc) {
   let label = null;
@@ -96,7 +96,10 @@ function itemCategoryFor(doc) {
   else if (doc.type === "tool") label = "Tools";
   else if (doc.type === "container") label = "Containers";
   else if (doc.type === "loot") {
-    label = TRADE_GOOD_SUBTYPES.includes(doc.system?.type?.value) ? "Trade Goods" : "Loot";
+    const subtype = doc.system?.type?.value;
+    if (TREASURE_SUBTYPES.includes(subtype)) label = "Treasure";
+    else if (TRADE_GOOD_SUBTYPES.includes(subtype)) label = "Trade Goods";
+    else label = "Loot";
   } else if (doc.type === "equipment") {
     label = ARMOR_SUBTYPES.includes(doc.system?.type?.value) ? "Armor" : "Equipment";
   }
