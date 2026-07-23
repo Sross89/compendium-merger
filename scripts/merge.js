@@ -142,7 +142,7 @@ function monsterTypeCategoryFor(doc) {
   return [{ label, sortKey: label }];
 }
 
-/** Vehicles, Species, Backgrounds, and Classes aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
+/** Vehicles, Species, and Backgrounds aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
 function uncategorized() {
   return null;
 }
@@ -152,6 +152,19 @@ function featCategoryFor(doc) {
   const subtype = featSubtype(doc);
   const label = FEAT_SUBTYPE_LABELS[subtype] ?? FEAT_SUBTYPE_LABELS.feat;
   return [{ label, sortKey: FEAT_SUBTYPE_ORDER.indexOf(subtype) }];
+}
+
+/**
+ * Class category: the base Class container item, the Subclass container item, and every
+ * class/subclass-granted feature (all "feat"-type, subtype "class" — class and subclass
+ * features aren't distinguished from each other at the subtype level) each get their own
+ * folder, rather than dumping all the mechanical passives/features in alongside the two
+ * container items.
+ */
+function classCategoryFor(doc) {
+  if (doc.type === "class") return [{ label: "Classes", sortKey: 0 }];
+  if (doc.type === "subclass") return [{ label: "Subclasses", sortKey: 1 }];
+  return [{ label: "Class Features", sortKey: 2 }];
 }
 
 /** The "Compendium Merger" compendium folder, created on first use. */
@@ -332,7 +345,7 @@ export async function runMerge({
   await rebuildPack(vehiclesPack, [...vehicles.byKey.values()], uncategorized);
   await rebuildPack(speciesPack, [...species.byKey.values()], uncategorized);
   await rebuildPack(backgroundsPack, [...backgrounds.byKey.values()], uncategorized);
-  await rebuildPack(classesPack, [...classes.byKey.values()], uncategorized);
+  await rebuildPack(classesPack, [...classes.byKey.values()], classCategoryFor);
   await rebuildPack(featsPack, [...feats.byKey.values()], featCategoryFor);
   await rebuildPack(monsterFeaturesPack, [...monsterFeatures.byKey.values()], uncategorized);
 
