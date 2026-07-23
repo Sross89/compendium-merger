@@ -1,5 +1,6 @@
 import {
-  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES, SPECIES_TYPES, BACKGROUND_TYPES, CLASS_TYPES, FEAT_TYPES,
+  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
+  isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc,
   MERGE_FOLDER_NAME, ARMOR_SUBTYPES, TRADE_GOOD_SUBTYPES, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER
 } from "./constants.js";
 
@@ -34,31 +35,35 @@ function toArray(indexLike) {
 async function getPackTypeIndex(packId) {
   if (packTypeIndexCache.has(packId)) return packTypeIndexCache.get(packId);
   const pack = game.packs.get(packId);
-  const rawIndex = pack ? await pack.getIndex({ fields: ["type"] }) : [];
+  // "system.type.value" is fetched alongside "type" so subtype-aware matchers (e.g.
+  // isBackgroundDoc, which has to tell a "feat"-type background feature apart from a
+  // "feat"-type actual feat) work against the lightweight index the same way they do
+  // against full documents.
+  const rawIndex = pack ? await pack.getIndex({ fields: ["type", "system.type.value"] }) : [];
   const entries = toArray(rawIndex);
   packTypeIndexCache.set(packId, entries);
   return entries;
 }
 
 /**
- * Same as getPacksFor(), but filtered down to only compendiums where `types` make up
- * the majority of what's actually inside — not just "contains at least one." Many
+ * Same as getPacksFor(), but filtered down to only compendiums where `matches` accounts
+ * for the majority of what's actually inside — not just "contains at least one." Many
  * compendiums (a Backgrounds or Character Classes pack, say) bundle a handful of
  * starting-equipment items alongside their real content; requiring a majority keeps
  * those out of the Items list instead of letting one stray item pull the whole pack in,
  * while still catching genuinely mixed packs (e.g. a combined "Items & Spells" pack)
  * for whichever category they're actually mostly made of.
  * @param {"Item"|"Actor"} documentName
- * @param {string[]} types
+ * @param {(entry: object) => boolean} matches
  * @returns {Promise<{id: string, label: string}[]>}
  */
-export async function getPacksWithType(documentName, types) {
+export async function getPacksWithType(documentName, matches) {
   const packs = getPacksFor(documentName);
   const results = [];
   for (const pack of packs) {
     const index = await getPackTypeIndex(pack.id);
     if (!index.length) continue;
-    const matching = index.filter(entry => types.includes(entry.type)).length;
+    const matching = index.filter(matches).length;
     if (matching / index.length > 0.5) results.push(pack);
   }
   return results;
@@ -286,10 +291,10 @@ export async function runMerge({
   const spells = await collectByKey(spellPackIds, doc => SPELL_TYPES.includes(doc.type), onProgress);
   const monsters = await collectByKey(monsterPackIds, doc => MONSTER_TYPES.includes(doc.type), onProgress);
   const vehicles = await collectByKey(vehiclePackIds, doc => VEHICLE_TYPES.includes(doc.type), onProgress);
-  const species = await collectByKey(speciesPackIds, doc => SPECIES_TYPES.includes(doc.type), onProgress);
-  const backgrounds = await collectByKey(backgroundPackIds, doc => BACKGROUND_TYPES.includes(doc.type), onProgress);
-  const classes = await collectByKey(classPackIds, doc => CLASS_TYPES.includes(doc.type), onProgress);
-  const feats = await collectByKey(featPackIds, doc => FEAT_TYPES.includes(doc.type), onProgress);
+  const species = await collectByKey(speciesPackIds, isSpeciesDoc, onProgress);
+  const backgrounds = await collectByKey(backgroundPackIds, isBackgroundDoc, onProgress);
+  const classes = await collectByKey(classPackIds, isClassDoc, onProgress);
+  const feats = await collectByKey(featPackIds, isFeatDoc, onProgress);
 
   onProgress?.({ stage: "writing" });
   const itemsPack = await getOrCreateMergedPack("Item", "Merged Items");

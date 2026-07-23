@@ -8,8 +8,18 @@
   {{localize "COMPENDIUM-MERGER.App.FilterEmptySources"}}
 </label>
 
-<fieldset>
-  <legend>{{localize "COMPENDIUM-MERGER.App.ItemsLegend"}}</legend>
+<nav class="cm-tabs">
+  {{#each tabs as |tab|}}
+    <a class="cm-tab-link {{#if tab.active}}active{{/if}}" data-tab="{{tab.id}}">
+      {{localize tab.label}}
+      {{#if tab.checkedCount}}<span class="cm-tab-count">{{tab.checkedCount}}</span>{{/if}}
+    </a>
+  {{/each}}
+</nav>
+
+<div class="cm-tab-panels">
+
+<div class="cm-tab-panel {{#if items.active}}active{{/if}}" data-tab="items">
   {{#if items.hasSources}}
     <div class="cm-source-list">
       {{#each items.order as |entry|}}
@@ -24,10 +34,9 @@
   {{else}}
     <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
   {{/if}}
-</fieldset>
+</div>
 
-<fieldset>
-  <legend>{{localize "COMPENDIUM-MERGER.App.SpellsLegend"}}</legend>
+<div class="cm-tab-panel {{#if spells.active}}active{{/if}}" data-tab="spells">
   {{#if spells.hasSources}}
     <div class="cm-source-list">
       {{#each spells.order as |entry|}}
@@ -42,10 +51,9 @@
   {{else}}
     <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
   {{/if}}
-</fieldset>
+</div>
 
-<fieldset>
-  <legend>{{localize "COMPENDIUM-MERGER.App.MonstersLegend"}}</legend>
+<div class="cm-tab-panel {{#if monsters.active}}active{{/if}}" data-tab="monsters">
   <div class="form-group">
     <label>{{localize "COMPENDIUM-MERGER.App.MonsterSortMode"}}</label>
     <select name="monsterSortMode">
@@ -67,10 +75,9 @@
   {{else}}
     <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoActorSources"}}</p>
   {{/if}}
-</fieldset>
+</div>
 
-<fieldset>
-  <legend>{{localize "COMPENDIUM-MERGER.App.VehiclesLegend"}}</legend>
+<div class="cm-tab-panel {{#if vehicles.active}}active{{/if}}" data-tab="vehicles">
   {{#if vehicles.hasSources}}
     <div class="cm-source-list">
       {{#each vehicles.order as |entry|}}
@@ -85,10 +92,9 @@
   {{else}}
     <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoActorSources"}}</p>
   {{/if}}
-</fieldset>
+</div>
 
-<fieldset>
-  <legend>{{localize "COMPENDIUM-MERGER.App.SpeciesLegend"}}</legend>
+<div class="cm-tab-panel {{#if species.active}}active{{/if}}" data-tab="species">
   {{#if species.hasSources}}
     <div class="cm-source-list">
       {{#each species.order as |entry|}}
@@ -103,10 +109,9 @@
   {{else}}
     <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
   {{/if}}
-</fieldset>
+</div>
 
-<fieldset>
-  <legend>{{localize "COMPENDIUM-MERGER.App.BackgroundsLegend"}}</legend>
+<div class="cm-tab-panel {{#if backgrounds.active}}active{{/if}}" data-tab="backgrounds">
   {{#if backgrounds.hasSources}}
     <div class="cm-source-list">
       {{#each backgrounds.order as |entry|}}
@@ -121,10 +126,9 @@
   {{else}}
     <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
   {{/if}}
-</fieldset>
+</div>
 
-<fieldset>
-  <legend>{{localize "COMPENDIUM-MERGER.App.ClassesLegend"}}</legend>
+<div class="cm-tab-panel {{#if classes.active}}active{{/if}}" data-tab="classes">
   {{#if classes.hasSources}}
     <div class="cm-source-list">
       {{#each classes.order as |entry|}}
@@ -139,10 +143,9 @@
   {{else}}
     <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
   {{/if}}
-</fieldset>
+</div>
 
-<fieldset>
-  <legend>{{localize "COMPENDIUM-MERGER.App.FeatsLegend"}}</legend>
+<div class="cm-tab-panel {{#if feats.active}}active{{/if}}" data-tab="feats">
   {{#if feats.hasSources}}
     <div class="cm-source-list">
       {{#each feats.order as |entry|}}
@@ -157,7 +160,9 @@
   {{else}}
     <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
   {{/if}}
-</fieldset>
+</div>
+
+</div>
 
 <p class="cm-hint cm-warning">{{localize "COMPENDIUM-MERGER.App.RebuildWarning"}}</p>
 

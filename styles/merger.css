@@ -30,6 +30,48 @@
   font-size: 0.9em;
 }
 
+.compendium-merger .cm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--color-border-light-tertiary, #782e22);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+}
+
+.compendium-merger .cm-tab-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--color-border-light-tertiary, #782e22);
+  border-radius: 4px;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+.compendium-merger .cm-tab-link.active {
+  background: var(--color-border-light-tertiary, #782e22);
+  font-weight: bold;
+}
+
+.compendium-merger .cm-tab-count {
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.compendium-merger .cm-tab-panels {
+  margin-bottom: 0.5rem;
+}
+
+.compendium-merger .cm-tab-panel {
+  display: none;
+}
+
+.compendium-merger .cm-tab-panel.active {
+  display: block;
+}
+
 .compendium-merger .cm-source-list {
   display: flex;
   flex-direction: column;

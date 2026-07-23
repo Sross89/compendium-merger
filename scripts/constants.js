@@ -37,6 +37,39 @@ export const CLASS_TYPES = ["class", "subclass"];
 /** dnd5e Item subtypes handled by the "Merged Feats" bucket. */
 export const FEAT_TYPES = ["feat"];
 
+/**
+ * dnd5e's modern (2024) rules collapse class features, subclass features, species traits,
+ * background features, and monster features all into a single Item type "feat", distinguished
+ * by a system.type.value subtype ("class", "subclass", "race"/"species", "background",
+ * "monster", or "feat" for an actual, player-chosen feat). Only the container document itself
+ * (one "Fighter" class item, one "Elf" species item, etc.) uses the dedicated "class"/"race"/
+ * "background" Item type — the many feature items granted along the way are all type "feat".
+ * Matching on doc.type alone therefore misses most of a feature-heavy compendium (e.g. a
+ * "Character Origins" pack, which is mostly background-feature "feat" items with only a
+ * handful of actual "background" container items) and dumps it into Feats instead of
+ * Backgrounds/Species/Classes. These helpers account for both.
+ */
+function featSubtype(doc) {
+  return doc.system?.type?.value || "feat";
+}
+
+export function isSpeciesDoc(doc) {
+  return SPECIES_TYPES.includes(doc.type) || (doc.type === "feat" && SPECIES_TYPES.includes(featSubtype(doc)));
+}
+
+export function isBackgroundDoc(doc) {
+  return BACKGROUND_TYPES.includes(doc.type) || (doc.type === "feat" && featSubtype(doc) === "background");
+}
+
+export function isClassDoc(doc) {
+  return CLASS_TYPES.includes(doc.type) || (doc.type === "feat" && CLASS_TYPES.includes(featSubtype(doc)));
+}
+
+/** A true, player-chosen feat — not a class/subclass/species/background/monster feature riding along on the same Item type. */
+export function isFeatDoc(doc) {
+  return doc.type === "feat" && featSubtype(doc) === "feat";
+}
+
 export const MERGE_FOLDER_NAME = "Compendium Merger";
 
 /** dnd5e system.type.value values for "equipment" items that are actually armor, not general equipment. */
