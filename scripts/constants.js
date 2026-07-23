@@ -60,9 +60,24 @@ export const CLASS_TYPES = ["class", "subclass"];
  */
 const FEATURE_ITEM_TYPES = ["feat", "feature"];
 
-function featSubtype(doc) {
+export function featSubtype(doc) {
   return doc.system?.type?.value || "feat";
 }
+
+/**
+ * system.type.value subtypes gathered into the "Merged Feats" category, each getting its
+ * own in-compendium sub-folder. Beyond true player-chosen feats ("feat"), this also covers
+ * Epic Boons ("supernaturalGift", from the 2024 DMG) and Artificer Infusions
+ * ("enchantment", from Tasha's Cauldron) — both are "feat"-type items in the same spirit as
+ * feats (player-facing bonus features), just not literally subtype "feat".
+ */
+export const FEAT_SUBTYPE_LABELS = {
+  feat: "Feats",
+  supernaturalGift: "Supernatural Gifts",
+  enchantment: "Enchantments"
+};
+
+export const FEAT_SUBTYPE_ORDER = Object.keys(FEAT_SUBTYPE_LABELS);
 
 export function isSpeciesDoc(doc) {
   return SPECIES_TYPES.includes(doc.type) || (FEATURE_ITEM_TYPES.includes(doc.type) && SPECIES_TYPES.includes(featSubtype(doc)));
@@ -76,9 +91,9 @@ export function isClassDoc(doc) {
   return CLASS_TYPES.includes(doc.type) || (FEATURE_ITEM_TYPES.includes(doc.type) && CLASS_TYPES.includes(featSubtype(doc)));
 }
 
-/** A true, player-chosen feat — not a class/subclass/species/background/monster feature riding along on the same Item type. */
+/** A true feat, Epic Boon, or Artificer Infusion — not a class/subclass/species/background/monster feature riding along on the same Item type. See FEAT_SUBTYPE_LABELS for the exact subtypes covered. */
 export function isFeatDoc(doc) {
-  return FEATURE_ITEM_TYPES.includes(doc.type) && featSubtype(doc) === "feat";
+  return FEATURE_ITEM_TYPES.includes(doc.type) && FEAT_SUBTYPE_ORDER.includes(featSubtype(doc));
 }
 
 /**

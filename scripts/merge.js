@@ -1,7 +1,8 @@
 import {
   ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
-  isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc,
-  MERGE_FOLDER_NAME, ARMOR_SUBTYPES, TRADE_GOOD_SUBTYPES, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER
+  isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc, featSubtype,
+  MERGE_FOLDER_NAME, ARMOR_SUBTYPES, TRADE_GOOD_SUBTYPES, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER,
+  FEAT_SUBTYPE_LABELS, FEAT_SUBTYPE_ORDER
 } from "./constants.js";
 
 const SPELL_CATEGORY_ORDER = ["Cantrips", "1st Level", "2nd Level", "3rd Level", "4th Level", "5th Level", "6th Level", "7th Level", "8th Level", "9th Level"];
@@ -138,9 +139,16 @@ function monsterTypeCategoryFor(doc) {
   return [{ label, sortKey: label }];
 }
 
-/** Vehicles, Species, Backgrounds, Classes, and Feats aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
+/** Vehicles, Species, Backgrounds, and Classes aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
 function uncategorized() {
   return null;
+}
+
+/** Feat category: one folder per subtype (Feats, Supernatural Gifts, Enchantments — see FEAT_SUBTYPE_LABELS). */
+function featCategoryFor(doc) {
+  const subtype = featSubtype(doc);
+  const label = FEAT_SUBTYPE_LABELS[subtype] ?? FEAT_SUBTYPE_LABELS.feat;
+  return [{ label, sortKey: FEAT_SUBTYPE_ORDER.indexOf(subtype) }];
 }
 
 /** The "Compendium Merger" compendium folder, created on first use. */
@@ -322,7 +330,7 @@ export async function runMerge({
   await rebuildPack(speciesPack, [...species.byKey.values()], uncategorized);
   await rebuildPack(backgroundsPack, [...backgrounds.byKey.values()], uncategorized);
   await rebuildPack(classesPack, [...classes.byKey.values()], uncategorized);
-  await rebuildPack(featsPack, [...feats.byKey.values()], uncategorized);
+  await rebuildPack(featsPack, [...feats.byKey.values()], featCategoryFor);
   await rebuildPack(monsterFeaturesPack, [...monsterFeatures.byKey.values()], uncategorized);
 
   onProgress?.({ stage: "done" });
