@@ -20,15 +20,22 @@ export function getPacksFor(documentName) {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-/** Cache of pack id -> lightweight index (just enough to check document types), so toggling the content filter repeatedly doesn't refetch. */
+/** Cache of pack id -> lightweight index as a plain array (just enough to check document types), so toggling the content filter repeatedly doesn't refetch. */
 const packTypeIndexCache = new Map();
+
+/** pack.getIndex() returns a Foundry Collection (Map-based, .size not .length) — normalize to a plain array once so callers can just use array methods. */
+function toArray(indexLike) {
+  if (Array.isArray(indexLike)) return indexLike;
+  return indexLike?.contents ?? Array.from(indexLike?.values?.() ?? []);
+}
 
 async function getPackTypeIndex(packId) {
   if (packTypeIndexCache.has(packId)) return packTypeIndexCache.get(packId);
   const pack = game.packs.get(packId);
-  const index = pack ? await pack.getIndex({ fields: ["type"] }) : [];
-  packTypeIndexCache.set(packId, index);
-  return index;
+  const rawIndex = pack ? await pack.getIndex({ fields: ["type"] }) : [];
+  const entries = toArray(rawIndex);
+  packTypeIndexCache.set(packId, entries);
+  return entries;
 }
 
 /**
