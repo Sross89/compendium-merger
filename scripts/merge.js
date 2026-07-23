@@ -32,9 +32,13 @@ async function getPackTypeIndex(packId) {
 }
 
 /**
- * Same as getPacksFor(), but filtered down to only compendiums that actually contain at
- * least one document whose type is in `types` (e.g. only Item compendiums that have a
- * weapon/equipment/consumable/tool/loot/container in them).
+ * Same as getPacksFor(), but filtered down to only compendiums where `types` make up
+ * the majority of what's actually inside — not just "contains at least one." Many
+ * compendiums (a Backgrounds or Character Classes pack, say) bundle a handful of
+ * starting-equipment items alongside their real content; requiring a majority keeps
+ * those out of the Items list instead of letting one stray item pull the whole pack in,
+ * while still catching genuinely mixed packs (e.g. a combined "Items & Spells" pack)
+ * for whichever category they're actually mostly made of.
  * @param {"Item"|"Actor"} documentName
  * @param {string[]} types
  * @returns {Promise<{id: string, label: string}[]>}
@@ -44,7 +48,9 @@ export async function getPacksWithType(documentName, types) {
   const results = [];
   for (const pack of packs) {
     const index = await getPackTypeIndex(pack.id);
-    if (index.some(entry => types.includes(entry.type))) results.push(pack);
+    if (!index.length) continue;
+    const matching = index.filter(entry => types.includes(entry.type)).length;
+    if (matching / index.length > 0.5) results.push(pack);
   }
   return results;
 }
