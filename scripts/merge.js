@@ -50,13 +50,15 @@ async function getPackDocuments(packId) {
 }
 
 /**
- * Same as getPacksFor(), but filtered down to only compendiums where `matches` accounts
- * for the majority of what's actually inside — not just "contains at least one." Many
- * compendiums (a Backgrounds or Character Classes pack, say) bundle a handful of
- * starting-equipment items alongside their real content; requiring a majority keeps
- * those out of the Items list instead of letting one stray item pull the whole pack in,
- * while still catching genuinely mixed packs (e.g. a combined "Items & Spells" pack)
- * for whichever category they're actually mostly made of.
+ * Same as getPacksFor(), but filtered down to only compendiums that contain at least one
+ * document `matches` accepts. A strict majority requirement was tried here previously, but
+ * real official content broke that assumption: dnd5e's 2024 "Origins" packs (Character
+ * Origins, the PHB's own Origins pack) legitimately bundle Species and Backgrounds
+ * together in one compendium, with Backgrounds only a small minority by document count
+ * (species traits/features vastly outnumber background features) — a majority filter hid
+ * those packs from the Backgrounds tab entirely, even though they contain perfectly good
+ * background content. "At least one match" means a pack that's mostly Species but has 16
+ * real Backgrounds in it still shows up under Backgrounds, same as it always did.
  * @param {"Item"|"Actor"} documentName
  * @param {(doc: object) => boolean} matches
  * @returns {Promise<{id: string, label: string}[]>}
@@ -66,9 +68,7 @@ export async function getPacksWithType(documentName, matches) {
   const results = [];
   for (const pack of packs) {
     const documents = await getPackDocuments(pack.id);
-    if (!documents.length) continue;
-    const matching = documents.filter(matches).length;
-    if (matching / documents.length > 0.5) results.push(pack);
+    if (documents.some(matches)) results.push(pack);
   }
   return results;
 }
