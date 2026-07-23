@@ -26,7 +26,13 @@ export const MONSTER_TYPES = ["npc"];
 /** dnd5e Actor subtypes handled by the "Merged Vehicles" bucket. Player characters ("character") and encounter "group" actors are intentionally excluded. */
 export const VEHICLE_TYPES = ["vehicle"];
 
-/** dnd5e Item subtypes handled by the "Merged Species" bucket. Covers both the older "race" type string and newer "species" naming. */
+/**
+ * dnd5e Item subtypes handled by the "Merged Species" bucket. WotC's 2024 rulebooks
+ * renamed "Race" to "Species" in the displayed UI, but the underlying Item type string is
+ * still "race" (confirmed against the installed dnd5e system + official content packs on
+ * disk) — "species" is kept here too as a defensive fallback in case a future dnd5e
+ * version does rename the internal key.
+ */
 export const SPECIES_TYPES = ["race", "species"];
 
 /** dnd5e Item subtypes handled by the "Merged Backgrounds" bucket. */
@@ -37,20 +43,20 @@ export const CLASS_TYPES = ["class", "subclass"];
 
 /**
  * dnd5e's modern (2024) rules collapse class features, subclass features, species traits,
- * background features, and monster features all into a single unified Item type,
- * distinguished by a system.type.value subtype ("class", "subclass", "race"/"species",
- * "background", "monster", or "feat" for an actual, player-chosen feat). Only the
- * container document itself (one "Fighter" class item, one "Elf" species item, etc.) uses
- * the dedicated "class"/"race"/"background" Item type — the many feature items granted
- * along the way are all this one unified type. Its Foundry create-item dialog now labels
- * it "Feature" rather than "Feat" (since it covers far more than just feats), but Foundry
- * systems generally avoid renaming the underlying `type` string once content exists using
- * it (that would require a data migration across every compendium in the ecosystem), so
- * both "feat" (the older/likely-still-current internal key) and "feature" (in case it *was*
- * renamed) are treated as this unified type here — matching on doc.type alone otherwise
- * misses most of a feature-heavy compendium (e.g. a "Character Origins" pack, which is
- * mostly background-feature items with only a handful of actual "background" container
- * items) and dumps it into Feats instead of Backgrounds/Species/Classes.
+ * background features, and monster features all into a single unified Item type "feat",
+ * distinguished by a system.type.value subtype ("class" for both class AND subclass
+ * features, "race" for species traits, "background", "monster", or "feat" for an actual,
+ * player-chosen feat). Only the container document itself (one "Fighter" class item, one
+ * "Elf" species item, etc.) uses the dedicated "class"/"subclass"/"race"/"background" Item
+ * type — the many feature items granted along the way are all type "feat". Confirmed
+ * directly against the installed dnd5e system + official content module packs on disk
+ * (PHB/DMG/MM/Tasha's/Phandelver): the Foundry create-item dialog now labels this type
+ * "Feature" rather than "Feat" in its UI, but the underlying `type` string is still "feat"
+ * — "feature" is kept as a defensive fallback in case a future dnd5e version renames the
+ * internal key. Matching on doc.type alone (without the subtype) misses most of a
+ * feature-heavy compendium (e.g. a "Character Origins" pack, which is mostly
+ * background-feature items with only a handful of actual "background" container items)
+ * and dumps it into Feats instead of Backgrounds/Species/Classes.
  */
 const FEATURE_ITEM_TYPES = ["feat", "feature"];
 
@@ -88,10 +94,10 @@ export function isMonsterFeatureDoc(doc) {
 
 export const MERGE_FOLDER_NAME = "Compendium Merger";
 
-/** dnd5e system.type.value values for "equipment" items that are actually armor, not general equipment. */
+/** dnd5e system.type.value values for "equipment" items that are actually armor, not general equipment. Confirmed against installed content. */
 export const ARMOR_SUBTYPES = ["light", "medium", "heavy", "shield"];
 
-/** dnd5e system.type.value values for "loot" items that are trade goods (gems, art objects, raw commodities) rather than generic loot. */
+/** dnd5e system.type.value values for "loot" items that are trade goods (gems, art objects, raw commodities) rather than generic loot. Confirmed against installed content ("trade", "gem", "art", "treasure" all seen in official packs); a rare adventure-specific "material" subtype was also spotted but is left as generic Loot rather than guessed at. */
 export const TRADE_GOOD_SUBTYPES = ["art", "gem", "trade", "treasure"];
 
 /** In-compendium top-level folder names for "Merged Items", and the order they're created/displayed in. */

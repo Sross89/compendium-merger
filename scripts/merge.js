@@ -23,26 +23,29 @@ export function getPacksFor(documentName) {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-/** Cache of pack id -> lightweight index as a plain array (just enough to check document types), so toggling the content filter repeatedly doesn't refetch. */
-const packTypeIndexCache = new Map();
+/** Cache of pack id -> full documents, so toggling the content filter repeatedly doesn't refetch. */
+const packDocumentsCache = new Map();
 
-/** pack.getIndex() returns a Foundry Collection (Map-based, .size not .length) — normalize to a plain array once so callers can just use array methods. */
+/** pack.getDocuments() should already return a plain array, but normalize defensively in case a given Foundry version hands back a Collection instead (Map-based, .size not .length) — same defensive pattern used elsewhere in this file for pack.folders. */
 function toArray(indexLike) {
   if (Array.isArray(indexLike)) return indexLike;
   return indexLike?.contents ?? Array.from(indexLike?.values?.() ?? []);
 }
 
-async function getPackTypeIndex(packId) {
-  if (packTypeIndexCache.has(packId)) return packTypeIndexCache.get(packId);
+/**
+ * Full Documents rather than the lightweight index — subtype-aware matchers (e.g.
+ * isBackgroundDoc) need doc.system.type.value, and getIndex()'s `fields` option isn't
+ * guaranteed to reconstruct arbitrary nested system fields the way accessing a real
+ * Document's data always does. Costs more than an index fetch, but only runs when the
+ * "only show compendiums with matching content" filter is on, and is cached per pack.
+ */
+async function getPackDocuments(packId) {
+  if (packDocumentsCache.has(packId)) return packDocumentsCache.get(packId);
   const pack = game.packs.get(packId);
-  // "system.type.value" is fetched alongside "type" so subtype-aware matchers (e.g.
-  // isBackgroundDoc, which has to tell a "feat"-type background feature apart from a
-  // "feat"-type actual feat) work against the lightweight index the same way they do
-  // against full documents.
-  const rawIndex = pack ? await pack.getIndex({ fields: ["type", "system.type.value"] }) : [];
-  const entries = toArray(rawIndex);
-  packTypeIndexCache.set(packId, entries);
-  return entries;
+  const rawDocuments = pack ? await pack.getDocuments() : [];
+  const documents = toArray(rawDocuments);
+  packDocumentsCache.set(packId, documents);
+  return documents;
 }
 
 /**
@@ -54,17 +57,17 @@ async function getPackTypeIndex(packId) {
  * while still catching genuinely mixed packs (e.g. a combined "Items & Spells" pack)
  * for whichever category they're actually mostly made of.
  * @param {"Item"|"Actor"} documentName
- * @param {(entry: object) => boolean} matches
+ * @param {(doc: object) => boolean} matches
  * @returns {Promise<{id: string, label: string}[]>}
  */
 export async function getPacksWithType(documentName, matches) {
   const packs = getPacksFor(documentName);
   const results = [];
   for (const pack of packs) {
-    const index = await getPackTypeIndex(pack.id);
-    if (!index.length) continue;
-    const matching = index.filter(matches).length;
-    if (matching / index.length > 0.5) results.push(pack);
+    const documents = await getPackDocuments(pack.id);
+    if (!documents.length) continue;
+    const matching = documents.filter(matches).length;
+    if (matching / documents.length > 0.5) results.push(pack);
   }
   return results;
 }
