@@ -142,9 +142,20 @@ function monsterTypeCategoryFor(doc) {
   return [{ label, sortKey: label }];
 }
 
-/** Vehicles, Species, and Backgrounds aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
+/** Vehicles and Species aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
 function uncategorized() {
   return null;
+}
+
+/**
+ * Background category: the base Background container item (e.g. "Acolyte") gets its own
+ * folder, separate from the passive feature it grants (e.g. "Shelter of the Faithful" —
+ * "feat"-type, subtype "background") — otherwise the feature ends up mixed in
+ * alphabetically alongside the actual backgrounds themselves.
+ */
+function backgroundCategoryFor(doc) {
+  if (doc.type === "background") return [{ label: "Backgrounds", sortKey: 0 }];
+  return [{ label: "Background Features", sortKey: 1 }];
 }
 
 /** Feat category: one folder per subtype (Feats, Supernatural Gifts, Enchantments — see FEAT_SUBTYPE_LABELS). */
@@ -344,7 +355,7 @@ export async function runMerge({
   await rebuildPack(monstersPack, [...monsters.byKey.values()], monsterCategoryFor);
   await rebuildPack(vehiclesPack, [...vehicles.byKey.values()], uncategorized);
   await rebuildPack(speciesPack, [...species.byKey.values()], uncategorized);
-  await rebuildPack(backgroundsPack, [...backgrounds.byKey.values()], uncategorized);
+  await rebuildPack(backgroundsPack, [...backgrounds.byKey.values()], backgroundCategoryFor);
   await rebuildPack(classesPack, [...classes.byKey.values()], classCategoryFor);
   await rebuildPack(featsPack, [...feats.byKey.values()], featCategoryFor);
   await rebuildPack(monsterFeaturesPack, [...monsterFeatures.byKey.values()], uncategorized);

@@ -2,7 +2,7 @@
   "id": "compendium-merger",
   "title": "Compendium Merger",
   "description": "Merge multiple Item and Actor compendiums (Items, Spells, Monsters, Vehicles, Species, Backgrounds, Classes, Feats, Monster Features) into unified, priority-ordered, folder-organized compendiums — so \"Fireball\" or \"Goblin\" from your highest-priority source wins instead of hunting across five separate compendiums.",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
