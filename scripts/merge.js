@@ -1,5 +1,5 @@
 import {
-  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
+  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES, SPECIES_TYPES,
   isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc, featSubtype,
   MERGE_FOLDER_NAME, ARMOR_SUBTYPES, TRADE_GOOD_SUBTYPES, TREASURE_SUBTYPES, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER,
   FEAT_SUBTYPE_LABELS, FEAT_SUBTYPE_ORDER
@@ -142,7 +142,7 @@ function monsterTypeCategoryFor(doc) {
   return [{ label, sortKey: label }];
 }
 
-/** Vehicles and Species aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
+/** Vehicles aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
 function uncategorized() {
   return null;
 }
@@ -156,6 +156,16 @@ function uncategorized() {
 function backgroundCategoryFor(doc) {
   if (doc.type === "background") return [{ label: "Backgrounds", sortKey: 0 }];
   return [{ label: "Background Features", sortKey: 1 }];
+}
+
+/**
+ * Species category: the base Species/race container item (e.g. "Elf") gets its own folder,
+ * separate from the racial trait it grants (e.g. "Draconic Ancestry" — "feat"-type,
+ * subtype "race") — same idea as Backgrounds.
+ */
+function speciesCategoryFor(doc) {
+  if (SPECIES_TYPES.includes(doc.type)) return [{ label: "Species", sortKey: 0 }];
+  return [{ label: "Species Traits", sortKey: 1 }];
 }
 
 /** Feat category: one folder per subtype (Feats, Supernatural Gifts, Enchantments — see FEAT_SUBTYPE_LABELS). */
@@ -354,7 +364,7 @@ export async function runMerge({
   await rebuildPack(spellsPack, [...spells.byKey.values()], spellCategoryFor);
   await rebuildPack(monstersPack, [...monsters.byKey.values()], monsterCategoryFor);
   await rebuildPack(vehiclesPack, [...vehicles.byKey.values()], uncategorized);
-  await rebuildPack(speciesPack, [...species.byKey.values()], uncategorized);
+  await rebuildPack(speciesPack, [...species.byKey.values()], speciesCategoryFor);
   await rebuildPack(backgroundsPack, [...backgrounds.byKey.values()], backgroundCategoryFor);
   await rebuildPack(classesPack, [...classes.byKey.values()], classCategoryFor);
   await rebuildPack(featsPack, [...feats.byKey.values()], featCategoryFor);
