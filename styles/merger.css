@@ -1,0 +1,67 @@
+.compendium-merger fieldset {
+  border: 1px solid var(--color-border-light-tertiary, #782e22);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.compendium-merger fieldset legend {
+  font-weight: bold;
+  padding: 0 0.25rem;
+}
+
+.compendium-merger .cm-hint {
+  font-style: italic;
+  font-size: 0.85em;
+  opacity: 0.8;
+  margin: 0.3rem 0;
+}
+
+.compendium-merger .cm-warning {
+  opacity: 1;
+  color: var(--color-level-warning, #a80);
+}
+
+.compendium-merger .cm-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.compendium-merger .cm-source-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.compendium-merger .cm-source-row input[type="checkbox"] {
+  flex: 0 0 auto;
+}
+
+.compendium-merger .cm-source-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compendium-merger .cm-move {
+  flex: 0 0 auto;
+  width: 1.8rem;
+  height: 1.8rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.compendium-merger .sheet-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.compendium-merger-open {
+  width: 100%;
+  margin-top: 4px;
+}

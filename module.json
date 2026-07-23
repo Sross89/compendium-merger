@@ -1,0 +1,35 @@
+{
+  "id": "compendium-merger",
+  "title": "Compendium Merger",
+  "description": "Merge multiple Item compendiums (Items & Spells, more types to come) into unified, priority-ordered compendiums — so \"Fireball\" from your highest-priority source wins instead of hunting across five separate spell lists.",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Simon Ross"
+    }
+  ],
+  "esmodules": [
+    "scripts/module.js"
+  ],
+  "styles": [
+    "styles/merger.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "url": "https://github.com/Sross89/compendium-merger",
+  "manifest": "https://raw.githubusercontent.com/Sross89/compendium-merger/master/module.json",
+  "download": "https://github.com/Sross89/compendium-merger/releases/latest/download/module.zip",
+  "readme": "README.md",
+  "license": "LICENSE",
+  "bugs": "https://github.com/Sross89/compendium-merger/issues",
+  "socket": false
+}

@@ -1,0 +1,49 @@
+<div class="compendium-merger-form">
+
+<p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.ScopeHint"}}</p>
+
+<fieldset>
+  <legend>{{localize "COMPENDIUM-MERGER.App.SourcesLegend"}}</legend>
+
+  {{#if hasSources}}
+    <div class="cm-source-list">
+      {{#each order as |entry|}}
+        <div class="cm-source-row">
+          <input type="checkbox" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+        </div>
+      {{/each}}
+    </div>
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.PriorityHint"}}</p>
+  {{else}}
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoSources"}}</p>
+  {{/if}}
+</fieldset>
+
+<p class="cm-hint cm-warning">{{localize "COMPENDIUM-MERGER.App.RebuildWarning"}}</p>
+
+{{#if result}}
+<fieldset>
+  <legend>{{localize "COMPENDIUM-MERGER.App.LastResultLegend"}}</legend>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultPacksRead"}}: {{result.packsRead}}</p>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultScanned"}}: {{result.scanned}}</p>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultItems"}}: {{result.items}}</p>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultSpells"}}: {{result.spells}}</p>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultSkipped"}}: {{result.skipped}}</p>
+</fieldset>
+{{/if}}
+
+<footer class="sheet-footer">
+  <button type="button" data-action="run-merge" {{#if running}}disabled{{/if}}>
+    <i class="fa-solid fa-code-merge"></i>
+    {{#if running}}
+      {{localize "COMPENDIUM-MERGER.App.Running"}}
+    {{else}}
+      {{localize "COMPENDIUM-MERGER.App.RunMerge"}}
+    {{/if}}
+  </button>
+</footer>
+
+</div>

@@ -1,0 +1,22 @@
+{
+  "COMPENDIUM-MERGER.App.Title": "Compendium Merger",
+  "COMPENDIUM-MERGER.App.SidebarButton": "Merge Compendiums",
+  "COMPENDIUM-MERGER.App.ScopeHint": "Merges Item compendiums only, and only Items (weapons/equipment/consumables/tools/loot/containers) and Spells for now — feats, classes, subclasses, backgrounds, and species are left alone and skipped.",
+  "COMPENDIUM-MERGER.App.SourcesLegend": "Source Compendiums",
+  "COMPENDIUM-MERGER.App.NoSources": "No Item compendiums are available. Enable some under your world's Compendium Packs settings first.",
+  "COMPENDIUM-MERGER.App.PriorityHint": "Check the compendiums to merge. Order matters: if the same name shows up in more than one checked compendium, the one closer to the top wins. Drag isn't supported — use the arrows to reorder.",
+  "COMPENDIUM-MERGER.App.MoveUp": "Move up",
+  "COMPENDIUM-MERGER.App.MoveDown": "Move down",
+  "COMPENDIUM-MERGER.App.RebuildWarning": "Running the merge completely wipes and rebuilds the \"Merged Items\" and \"Merged Spells\" compendiums from your checked sources. Any manual edits made directly inside those two compendiums will be lost — edit the sources instead, then re-run.",
+  "COMPENDIUM-MERGER.App.RunMerge": "Run Merge",
+  "COMPENDIUM-MERGER.App.Running": "Merging...",
+  "COMPENDIUM-MERGER.App.MergeComplete": "Merge complete: {items} items, {spells} spells.",
+  "COMPENDIUM-MERGER.App.LastResultLegend": "Last Merge Result",
+  "COMPENDIUM-MERGER.App.ResultPacksRead": "Compendiums read",
+  "COMPENDIUM-MERGER.App.ResultScanned": "Documents scanned",
+  "COMPENDIUM-MERGER.App.ResultItems": "Items merged",
+  "COMPENDIUM-MERGER.App.ResultSpells": "Spells merged",
+  "COMPENDIUM-MERGER.App.ResultSkipped": "Skipped (other types)",
+  "COMPENDIUM-MERGER.Warnings.NoSourcesChecked": "Check at least one source compendium before running the merge.",
+  "COMPENDIUM-MERGER.Warnings.MergeFailed": "The merge failed — check the browser console (F12) for details."
+}
