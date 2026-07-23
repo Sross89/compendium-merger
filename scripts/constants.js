@@ -35,51 +35,55 @@ export const BACKGROUND_TYPES = ["background"];
 /** dnd5e Item subtypes handled by the "Merged Classes" bucket. Subclasses are bundled in alongside classes rather than split into a fifth compendium. */
 export const CLASS_TYPES = ["class", "subclass"];
 
-/** dnd5e Item subtypes handled by the "Merged Feats" bucket. */
-export const FEAT_TYPES = ["feat"];
-
 /**
  * dnd5e's modern (2024) rules collapse class features, subclass features, species traits,
- * background features, and monster features all into a single Item type "feat", distinguished
- * by a system.type.value subtype ("class", "subclass", "race"/"species", "background",
- * "monster", or "feat" for an actual, player-chosen feat). Only the container document itself
- * (one "Fighter" class item, one "Elf" species item, etc.) uses the dedicated "class"/"race"/
- * "background" Item type — the many feature items granted along the way are all type "feat".
- * Matching on doc.type alone therefore misses most of a feature-heavy compendium (e.g. a
- * "Character Origins" pack, which is mostly background-feature "feat" items with only a
- * handful of actual "background" container items) and dumps it into Feats instead of
- * Backgrounds/Species/Classes. These helpers account for both.
+ * background features, and monster features all into a single unified Item type,
+ * distinguished by a system.type.value subtype ("class", "subclass", "race"/"species",
+ * "background", "monster", or "feat" for an actual, player-chosen feat). Only the
+ * container document itself (one "Fighter" class item, one "Elf" species item, etc.) uses
+ * the dedicated "class"/"race"/"background" Item type — the many feature items granted
+ * along the way are all this one unified type. Its Foundry create-item dialog now labels
+ * it "Feature" rather than "Feat" (since it covers far more than just feats), but Foundry
+ * systems generally avoid renaming the underlying `type` string once content exists using
+ * it (that would require a data migration across every compendium in the ecosystem), so
+ * both "feat" (the older/likely-still-current internal key) and "feature" (in case it *was*
+ * renamed) are treated as this unified type here — matching on doc.type alone otherwise
+ * misses most of a feature-heavy compendium (e.g. a "Character Origins" pack, which is
+ * mostly background-feature items with only a handful of actual "background" container
+ * items) and dumps it into Feats instead of Backgrounds/Species/Classes.
  */
+const FEATURE_ITEM_TYPES = ["feat", "feature"];
+
 function featSubtype(doc) {
   return doc.system?.type?.value || "feat";
 }
 
 export function isSpeciesDoc(doc) {
-  return SPECIES_TYPES.includes(doc.type) || (doc.type === "feat" && SPECIES_TYPES.includes(featSubtype(doc)));
+  return SPECIES_TYPES.includes(doc.type) || (FEATURE_ITEM_TYPES.includes(doc.type) && SPECIES_TYPES.includes(featSubtype(doc)));
 }
 
 export function isBackgroundDoc(doc) {
-  return BACKGROUND_TYPES.includes(doc.type) || (doc.type === "feat" && featSubtype(doc) === "background");
+  return BACKGROUND_TYPES.includes(doc.type) || (FEATURE_ITEM_TYPES.includes(doc.type) && featSubtype(doc) === "background");
 }
 
 export function isClassDoc(doc) {
-  return CLASS_TYPES.includes(doc.type) || (doc.type === "feat" && CLASS_TYPES.includes(featSubtype(doc)));
+  return CLASS_TYPES.includes(doc.type) || (FEATURE_ITEM_TYPES.includes(doc.type) && CLASS_TYPES.includes(featSubtype(doc)));
 }
 
 /** A true, player-chosen feat — not a class/subclass/species/background/monster feature riding along on the same Item type. */
 export function isFeatDoc(doc) {
-  return doc.type === "feat" && featSubtype(doc) === "feat";
+  return FEATURE_ITEM_TYPES.includes(doc.type) && featSubtype(doc) === "feat";
 }
 
 /**
- * A monster feature or creature trait — the "feat"-type items that make up an NPC/monster
+ * A monster feature or creature trait — the unified-type items that make up an NPC/monster
  * stat block (Multiattack, Pack Tactics, Amphibious, and the like). Official WotC content
  * splits its stat-block feature compendiums into things it labels "Monster Features" and
  * "Creature Traits", but both live under the same "monster" system.type.value subtype in
  * dnd5e's data model, so they're merged into one category rather than two.
  */
 export function isMonsterFeatureDoc(doc) {
-  return doc.type === "feat" && featSubtype(doc) === "monster";
+  return FEATURE_ITEM_TYPES.includes(doc.type) && featSubtype(doc) === "monster";
 }
 
 export const MERGE_FOLDER_NAME = "Compendium Merger";
