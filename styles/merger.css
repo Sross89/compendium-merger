@@ -40,8 +40,23 @@
   flex: 0 0 auto;
 }
 
-.compendium-merger .cm-source-label {
+.compendium-merger .cm-source-label-group {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.compendium-merger .cm-source-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compendium-merger .cm-source-packs {
+  font-size: 0.8em;
+  opacity: 0.7;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

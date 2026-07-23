@@ -10,7 +10,10 @@
       {{#each order as |entry|}}
         <div class="cm-source-row">
           <input type="checkbox" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
-          <span class="cm-source-label">{{entry.label}}</span>
+          <span class="cm-source-label-group">
+            <span class="cm-source-label">{{entry.label}}</span>
+            <span class="cm-source-packs">{{entry.packsLabel}}</span>
+          </span>
           <button type="button" class="cm-move" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
           <button type="button" class="cm-move" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
         </div>

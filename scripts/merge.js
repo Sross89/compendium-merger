@@ -1,14 +1,43 @@
 import { ITEM_TYPES, SPELL_TYPES, MERGE_FOLDER_NAME } from "./constants.js";
 
-/** All compendiums that hold Item documents, visible to the current user. */
-export function getSourceCompendiums() {
-  return game.packs
-    .filter(pack => pack.documentName === "Item")
-    .map(pack => ({
+const NO_FOLDER_KEY = "__no-folder__";
+
+/**
+ * Every Item compendium, grouped by its parent Compendium folder (sidebar organization),
+ * so priority can be set per folder instead of per individual pack. Compendiums with no
+ * parent folder are grouped into a single "(No Folder)" bucket.
+ * @returns {{id: string, label: string, packs: {id: string, label: string}[]}[]}
+ */
+export function getSourceFolders() {
+  const groups = new Map();
+
+  for (const pack of game.packs.filter(p => p.documentName === "Item")) {
+    const folder = pack.folder;
+    const key = folder?.id ?? NO_FOLDER_KEY;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        id: key,
+        label: folder?.name ?? game.i18n.localize("COMPENDIUM-MERGER.App.NoFolder"),
+        packs: []
+      });
+    }
+    groups.get(key).packs.push({
       id: pack.metadata.id,
       label: `${pack.title} (${pack.metadata.packageName})`
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    });
+  }
+
+  for (const group of groups.values()) {
+    group.packs.sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  const result = [...groups.values()];
+  result.sort((a, b) => {
+    if (a.id === NO_FOLDER_KEY) return 1;
+    if (b.id === NO_FOLDER_KEY) return -1;
+    return a.label.localeCompare(b.label);
+  });
+  return result;
 }
 
 /** The "Compendium Merger" compendium folder, created on first use. */

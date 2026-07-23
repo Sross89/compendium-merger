@@ -1,5 +1,5 @@
 import { MODULE_ID, SETTINGS } from "../constants.js";
-import { getSourceCompendiums, runMerge } from "../merge.js";
+import { getSourceFolders, runMerge } from "../merge.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -25,19 +25,19 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
   /** Result of the last completed merge this session, or null. */
   #lastResult = null;
 
-  /** Build the current ordered source list, merging saved order/checked state with whatever compendiums actually exist right now. */
+  /** Build the current ordered source folder list, merging saved order/checked state with whatever folders actually exist right now. */
   #buildOrder() {
-    const available = getSourceCompendiums();
+    const available = getSourceFolders();
     const saved = game.settings.get(MODULE_ID, SETTINGS.SOURCE_ORDER) ?? [];
     const savedById = new Map(saved.map(entry => [entry.id, entry]));
 
     const ordered = [];
     for (const entry of saved) {
-      const pack = available.find(p => p.id === entry.id);
-      if (pack) ordered.push({ id: pack.id, label: pack.label, checked: !!entry.checked });
+      const folder = available.find(f => f.id === entry.id);
+      if (folder) ordered.push({ id: folder.id, label: folder.label, packs: folder.packs, checked: !!entry.checked });
     }
-    for (const pack of available) {
-      if (!savedById.has(pack.id)) ordered.push({ id: pack.id, label: pack.label, checked: false });
+    for (const folder of available) {
+      if (!savedById.has(folder.id)) ordered.push({ id: folder.id, label: folder.label, packs: folder.packs, checked: false });
     }
     return ordered;
   }
@@ -49,7 +49,11 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
   async _prepareContext() {
     const order = this.#buildOrder();
     return {
-      order: order.map((entry, index) => ({ ...entry, index })),
+      order: order.map((entry, index) => ({
+        ...entry,
+        index,
+        packsLabel: entry.packs.map(p => p.label).join(", ")
+      })),
       hasSources: !!order.length,
       running: this.#running,
       result: this.#lastResult
@@ -98,8 +102,10 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (this.#running) return;
 
     const order = this.#buildOrder();
-    const checkedIds = order.filter(entry => entry.checked).map(entry => entry.id);
-    if (!checkedIds.length) {
+    const checkedPackIds = order
+      .filter(entry => entry.checked)
+      .flatMap(entry => entry.packs.map(p => p.id));
+    if (!checkedPackIds.length) {
       ui.notifications.warn(game.i18n.localize("COMPENDIUM-MERGER.Warnings.NoSourcesChecked"));
       return;
     }
@@ -109,7 +115,7 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.render();
 
     try {
-      const result = await runMerge(checkedIds);
+      const result = await runMerge(checkedPackIds);
       this.#lastResult = result;
       ui.notifications.info(game.i18n.format("COMPENDIUM-MERGER.App.MergeComplete", {
         items: result.items,
