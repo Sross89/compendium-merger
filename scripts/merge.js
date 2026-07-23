@@ -2,22 +2,32 @@ import { ITEM_TYPES, SPELL_TYPES, MERGE_FOLDER_NAME } from "./constants.js";
 
 const NO_FOLDER_KEY = "__no-folder__";
 
+/** Climb from a folder up to its top-most ancestor (a folder with no parent of its own). */
+function getRootFolder(folder) {
+  let current = folder;
+  while (current?.folder) current = current.folder;
+  return current;
+}
+
 /**
- * Every Item compendium, grouped by its parent Compendium folder (sidebar organization),
- * so priority can be set per folder instead of per individual pack. Compendiums with no
- * parent folder are grouped into a single "(No Folder)" bucket.
+ * Every Item compendium, grouped by its top-level (root) Compendium folder — climbing
+ * past any nested sub-folders (e.g. a "Legacy Content" folder holding separate "Items &
+ * Spells" and "Monsters" sub-folders) so priority is set once per source, not per
+ * sub-folder. Compendiums with no parent folder are grouped into a single "(No Folder)"
+ * bucket. Every pack anywhere under a root folder — no matter how deeply nested — ends
+ * up in that root's group, so checking one folder sweeps in everything inside it.
  * @returns {{id: string, label: string, packs: {id: string, label: string}[]}[]}
  */
 export function getSourceFolders() {
   const groups = new Map();
 
   for (const pack of game.packs.filter(p => p.documentName === "Item")) {
-    const folder = pack.folder;
-    const key = folder?.id ?? NO_FOLDER_KEY;
+    const root = pack.folder ? getRootFolder(pack.folder) : null;
+    const key = root?.id ?? NO_FOLDER_KEY;
     if (!groups.has(key)) {
       groups.set(key, {
         id: key,
-        label: folder?.name ?? game.i18n.localize("COMPENDIUM-MERGER.App.NoFolder"),
+        label: root?.name ?? game.i18n.localize("COMPENDIUM-MERGER.App.NoFolder"),
         packs: []
       });
     }

@@ -5,7 +5,7 @@
   "COMPENDIUM-MERGER.App.SourcesLegend": "Source Folders",
   "COMPENDIUM-MERGER.App.NoFolder": "(No Folder)",
   "COMPENDIUM-MERGER.App.NoSources": "No Item compendiums are available. Enable some under your world's Compendium Packs settings first.",
-  "COMPENDIUM-MERGER.App.PriorityHint": "Check the folders to merge — every Item compendium inside a checked folder is included. Order matters: if the same name shows up in more than one checked folder, the one closer to the top wins. Compendiums with no parent folder are grouped under \"(No Folder)\". Drag isn't supported — use the arrows to reorder.",
+  "COMPENDIUM-MERGER.App.PriorityHint": "Each row is a top-level Compendium folder — every Item compendium underneath it is included, no matter how many sub-folders deep. Check the ones to merge and order them by priority: if the same name shows up under more than one checked folder, the one closer to the top wins. Compendiums with no parent folder are grouped under \"(No Folder)\". Drag isn't supported — use the arrows to reorder.",
   "COMPENDIUM-MERGER.App.MoveUp": "Move up",
   "COMPENDIUM-MERGER.App.MoveDown": "Move down",
   "COMPENDIUM-MERGER.App.RebuildWarning": "Running the merge completely wipes and rebuilds the \"Merged Items\" and \"Merged Spells\" compendiums from your checked sources. Any manual edits made directly inside those two compendiums will be lost — edit the sources instead, then re-run.",

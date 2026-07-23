@@ -2,7 +2,7 @@
   "id": "compendium-merger",
   "title": "Compendium Merger",
   "description": "Merge multiple Item compendiums (Items & Spells, more types to come) into unified, priority-ordered compendiums — so \"Fireball\" from your highest-priority source wins instead of hunting across five separate spell lists.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
