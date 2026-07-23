@@ -9,6 +9,7 @@ export const SETTINGS = {
   BACKGROUND_SOURCE_ORDER: "backgroundSourceOrder",
   CLASS_SOURCE_ORDER: "classSourceOrder",
   FEAT_SOURCE_ORDER: "featSourceOrder",
+  MONSTER_FEATURE_SOURCE_ORDER: "monsterFeatureSourceOrder",
   MONSTER_SORT_MODE: "monsterSortMode",
   FILTER_EMPTY_SOURCES: "filterEmptySources"
 };
@@ -68,6 +69,17 @@ export function isClassDoc(doc) {
 /** A true, player-chosen feat — not a class/subclass/species/background/monster feature riding along on the same Item type. */
 export function isFeatDoc(doc) {
   return doc.type === "feat" && featSubtype(doc) === "feat";
+}
+
+/**
+ * A monster feature or creature trait — the "feat"-type items that make up an NPC/monster
+ * stat block (Multiattack, Pack Tactics, Amphibious, and the like). Official WotC content
+ * splits its stat-block feature compendiums into things it labels "Monster Features" and
+ * "Creature Traits", but both live under the same "monster" system.type.value subtype in
+ * dnd5e's data model, so they're merged into one category rather than two.
+ */
+export function isMonsterFeatureDoc(doc) {
+  return doc.type === "feat" && featSubtype(doc) === "monster";
 }
 
 export const MERGE_FOLDER_NAME = "Compendium Merger";

@@ -162,6 +162,23 @@
   {{/if}}
 </div>
 
+<div class="cm-tab-panel {{#if monsterFeatures.active}}active{{/if}}" data-tab="monsterFeatures">
+  {{#if monsterFeatures.hasSources}}
+    <div class="cm-source-list">
+      {{#each monsterFeatures.order as |entry|}}
+        <div class="cm-source-row">
+          <input type="checkbox" data-category="monsterFeatures" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-category="monsterFeatures" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-category="monsterFeatures" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
+  {{/if}}
+</div>
+
 </div>
 
 <p class="cm-hint cm-warning">{{localize "COMPENDIUM-MERGER.App.RebuildWarning"}}</p>
@@ -179,6 +196,7 @@
   <p>{{localize "COMPENDIUM-MERGER.App.ResultBackgrounds"}}: {{result.backgrounds}}</p>
   <p>{{localize "COMPENDIUM-MERGER.App.ResultClasses"}}: {{result.classes}}</p>
   <p>{{localize "COMPENDIUM-MERGER.App.ResultFeats"}}: {{result.feats}}</p>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultMonsterFeatures"}}: {{result.monsterFeatures}}</p>
   <p>{{localize "COMPENDIUM-MERGER.App.ResultSkipped"}}: {{result.skipped}}</p>
 </fieldset>
 {{/if}}

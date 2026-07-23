@@ -1,13 +1,13 @@
 import {
   MODULE_ID, SETTINGS,
   ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
-  isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc
+  isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc
 } from "../constants.js";
 import { getPacksFor, getPacksWithType, runMerge } from "../merge.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
-/** The eight independently-ordered source categories, each with a label (for the tab nav) and a `matches` predicate used by the optional content filter. */
+/** The nine independently-ordered source categories, each with a label (for the tab nav) and a `matches` predicate used by the optional content filter. */
 const CATEGORIES = {
   items: { settingsKey: SETTINGS.ITEM_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.ItemsLegend", matches: doc => ITEM_TYPES.includes(doc.type) },
   spells: { settingsKey: SETTINGS.SPELL_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.SpellsLegend", matches: doc => SPELL_TYPES.includes(doc.type) },
@@ -16,7 +16,8 @@ const CATEGORIES = {
   species: { settingsKey: SETTINGS.SPECIES_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.SpeciesLegend", matches: isSpeciesDoc },
   backgrounds: { settingsKey: SETTINGS.BACKGROUND_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.BackgroundsLegend", matches: isBackgroundDoc },
   classes: { settingsKey: SETTINGS.CLASS_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.ClassesLegend", matches: isClassDoc },
-  feats: { settingsKey: SETTINGS.FEAT_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.FeatsLegend", matches: isFeatDoc }
+  feats: { settingsKey: SETTINGS.FEAT_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.FeatsLegend", matches: isFeatDoc },
+  monsterFeatures: { settingsKey: SETTINGS.MONSTER_FEATURE_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.MonsterFeaturesLegend", matches: isMonsterFeatureDoc }
 };
 
 const CATEGORY_IDS = Object.keys(CATEGORIES);
@@ -171,7 +172,7 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const checkedIds = async (categoryId) => (await this.#buildOrder(categoryId)).filter(entry => entry.checked).map(entry => entry.id);
     const checkedLists = await Promise.all(CATEGORY_IDS.map(checkedIds));
-    const [itemPackIds, spellPackIds, monsterPackIds, vehiclePackIds, speciesPackIds, backgroundPackIds, classPackIds, featPackIds] = checkedLists;
+    const [itemPackIds, spellPackIds, monsterPackIds, vehiclePackIds, speciesPackIds, backgroundPackIds, classPackIds, featPackIds, monsterFeaturePackIds] = checkedLists;
 
     if (!checkedLists.some(list => list.length)) {
       ui.notifications.warn(game.i18n.localize("COMPENDIUM-MERGER.Warnings.NoSourcesChecked"));
@@ -187,7 +188,7 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
     try {
       const result = await runMerge({
         itemPackIds, spellPackIds, monsterPackIds, vehiclePackIds,
-        speciesPackIds, backgroundPackIds, classPackIds, featPackIds,
+        speciesPackIds, backgroundPackIds, classPackIds, featPackIds, monsterFeaturePackIds,
         monsterSortMode
       });
       this.#lastResult = result;
@@ -199,7 +200,8 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
         species: result.species,
         backgrounds: result.backgrounds,
         classes: result.classes,
-        feats: result.feats
+        feats: result.feats,
+        monsterFeatures: result.monsterFeatures
       }));
     } catch (err) {
       console.error(`${MODULE_ID} | Merge failed`, err);

@@ -1,6 +1,6 @@
 import {
   ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
-  isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc,
+  isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc,
   MERGE_FOLDER_NAME, ARMOR_SUBTYPES, TRADE_GOOD_SUBTYPES, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER
 } from "./constants.js";
 
@@ -263,12 +263,12 @@ async function collectByKey(packIds, matchesType, onProgress) {
 }
 
 /**
- * Run a full-rebuild merge. Each of the eight categories (Items, Spells, Monsters,
- * Vehicles, Species, Backgrounds, Classes, Feats) has its own independent
- * priority-ordered list of source compendiums — a source that's great for spells isn't
- * necessarily the one you want winning for monsters, so priority is set per category
- * rather than once globally. Rebuilds all eight "Merged ..." world compendiums from the
- * result.
+ * Run a full-rebuild merge. Each of the nine categories (Items, Spells, Monsters,
+ * Vehicles, Species, Backgrounds, Classes, Feats, Monster Features) has its own
+ * independent priority-ordered list of source compendiums — a source that's great for
+ * spells isn't necessarily the one you want winning for monsters, so priority is set per
+ * category rather than once globally. Rebuilds all nine "Merged ..." world compendiums
+ * from the result.
  * @param {object} params
  * @param {string[]} [params.itemPackIds] highest priority first
  * @param {string[]} [params.spellPackIds] highest priority first
@@ -278,13 +278,15 @@ async function collectByKey(packIds, matchesType, onProgress) {
  * @param {string[]} [params.backgroundPackIds] highest priority first
  * @param {string[]} [params.classPackIds] highest priority first
  * @param {string[]} [params.featPackIds] highest priority first
+ * @param {string[]} [params.monsterFeaturePackIds] highest priority first
  * @param {"cr"|"type"} [params.monsterSortMode]
  * @param {(update: {stage: string, packId?: string}) => void} [onProgress]
- * @returns {Promise<{scanned: number, skipped: number, packsRead: number, items: number, spells: number, monsters: number, vehicles: number, species: number, backgrounds: number, classes: number, feats: number}>}
+ * @returns {Promise<{scanned: number, skipped: number, packsRead: number, items: number, spells: number, monsters: number, vehicles: number, species: number, backgrounds: number, classes: number, feats: number, monsterFeatures: number}>}
  */
 export async function runMerge({
   itemPackIds = [], spellPackIds = [], monsterPackIds = [], vehiclePackIds = [],
   speciesPackIds = [], backgroundPackIds = [], classPackIds = [], featPackIds = [],
+  monsterFeaturePackIds = [],
   monsterSortMode = "cr"
 } = {}, onProgress) {
   const items = await collectByKey(itemPackIds, doc => ITEM_TYPES.includes(doc.type), onProgress);
@@ -295,6 +297,7 @@ export async function runMerge({
   const backgrounds = await collectByKey(backgroundPackIds, isBackgroundDoc, onProgress);
   const classes = await collectByKey(classPackIds, isClassDoc, onProgress);
   const feats = await collectByKey(featPackIds, isFeatDoc, onProgress);
+  const monsterFeatures = await collectByKey(monsterFeaturePackIds, isMonsterFeatureDoc, onProgress);
 
   onProgress?.({ stage: "writing" });
   const itemsPack = await getOrCreateMergedPack("Item", "Merged Items");
@@ -305,6 +308,7 @@ export async function runMerge({
   const backgroundsPack = await getOrCreateMergedPack("Item", "Merged Backgrounds");
   const classesPack = await getOrCreateMergedPack("Item", "Merged Classes");
   const featsPack = await getOrCreateMergedPack("Item", "Merged Feats");
+  const monsterFeaturesPack = await getOrCreateMergedPack("Item", "Merged Monster Features");
 
   const monsterCategoryFor = monsterSortMode === "type" ? monsterTypeCategoryFor : monsterCRCategoryFor;
 
@@ -316,10 +320,11 @@ export async function runMerge({
   await rebuildPack(backgroundsPack, [...backgrounds.byKey.values()], uncategorized);
   await rebuildPack(classesPack, [...classes.byKey.values()], uncategorized);
   await rebuildPack(featsPack, [...feats.byKey.values()], uncategorized);
+  await rebuildPack(monsterFeaturesPack, [...monsterFeatures.byKey.values()], uncategorized);
 
   onProgress?.({ stage: "done" });
 
-  const parts = [items, spells, monsters, vehicles, species, backgrounds, classes, feats];
+  const parts = [items, spells, monsters, vehicles, species, backgrounds, classes, feats, monsterFeatures];
   return {
     scanned: parts.reduce((sum, part) => sum + part.scanned, 0),
     skipped: parts.reduce((sum, part) => sum + part.skipped, 0),
@@ -331,6 +336,7 @@ export async function runMerge({
     species: species.byKey.size,
     backgrounds: backgrounds.byKey.size,
     classes: classes.byKey.size,
-    feats: feats.byKey.size
+    feats: feats.byKey.size,
+    monsterFeatures: monsterFeatures.byKey.size
   };
 }
