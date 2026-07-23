@@ -1,15 +1,17 @@
 import {
-  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
-  MERGE_FOLDER_NAME, ARMOR_SUBTYPES, ITEM_CATEGORY_ORDER
+  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES, SPECIES_TYPES, BACKGROUND_TYPES, CLASS_TYPES, FEAT_TYPES,
+  MERGE_FOLDER_NAME, ARMOR_SUBTYPES, TRADE_GOOD_SUBTYPES, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER
 } from "./constants.js";
 
 const SPELL_CATEGORY_ORDER = ["Cantrips", "1st Level", "2nd Level", "3rd Level", "4th Level", "5th Level", "6th Level", "7th Level", "8th Level", "9th Level"];
 
 /**
- * A document's in-compendium category: a human-readable folder name plus a sort key
- * (number or string) to order those folders by. Returning null means "no folder — leave
- * it at the compendium's top level."
- * @typedef {{label: string, sortKey: number|string}|null} Category
+ * A document's in-compendium folder path: an array of {label, sortKey} segments from
+ * root to leaf (e.g. [{label: "Weapons", ...}, {label: "Rare", ...}] nests a "Rare"
+ * folder inside "Weapons"). Returning null means "no folder — leave it at the
+ * compendium's top level."
+ * @typedef {{label: string, sortKey: number|string}} CategorySegment
+ * @typedef {CategorySegment[]|null} CategoryPath
  */
 
 /** All compendiums of the given document type ("Item" or "Actor"), visible to the current user. */
@@ -62,23 +64,47 @@ export async function getPacksWithType(documentName, types) {
   return results;
 }
 
-/** Which in-compendium folder a merged Item belongs to: Weapons/Armor/Equipment/Consumables/Tools/Loot/Containers. */
+/** Human-readable rarity label, matching dnd5e's rarity naming. Blank/unset is "Mundane". */
+function rarityLabel(rarity) {
+  return RARITY_LABELS[rarity] ?? RARITY_LABELS[""];
+}
+
+function raritySortKey(rarity) {
+  const index = RARITY_ORDER.indexOf(rarity);
+  return index === -1 ? 0 : index;
+}
+
+/**
+ * Which in-compendium folder path a merged Item belongs to. Top level is
+ * Weapons/Armor/Equipment/Consumables/Tools/Trade Goods/Loot/Containers; everything
+ * except Trade Goods and Loot (mundane commodity buckets) also gets a rarity
+ * sub-folder (Mundane/Common/Uncommon/Rare/Very Rare/Legendary/Artifact).
+ */
 function itemCategoryFor(doc) {
   let label = null;
   if (doc.type === "weapon") label = "Weapons";
   else if (doc.type === "consumable") label = "Consumables";
   else if (doc.type === "tool") label = "Tools";
-  else if (doc.type === "loot") label = "Loot";
   else if (doc.type === "container") label = "Containers";
-  else if (doc.type === "equipment") label = ARMOR_SUBTYPES.includes(doc.system?.type?.value) ? "Armor" : "Equipment";
+  else if (doc.type === "loot") {
+    label = TRADE_GOOD_SUBTYPES.includes(doc.system?.type?.value) ? "Trade Goods" : "Loot";
+  } else if (doc.type === "equipment") {
+    label = ARMOR_SUBTYPES.includes(doc.system?.type?.value) ? "Armor" : "Equipment";
+  }
   if (label === null) return null;
-  return { label, sortKey: ITEM_CATEGORY_ORDER.indexOf(label) };
+
+  const path = [{ label, sortKey: ITEM_CATEGORY_ORDER.indexOf(label) }];
+  if (!NO_RARITY_CATEGORIES.includes(label)) {
+    const rarity = doc.system?.rarity ?? "";
+    path.push({ label: rarityLabel(rarity), sortKey: raritySortKey(rarity) });
+  }
+  return path;
 }
 
 /** Which in-compendium folder a merged Spell belongs to: Cantrips, 1st Level, ... 9th Level. */
 function spellCategoryFor(doc) {
   const level = doc.system?.level ?? 0;
-  return { label: SPELL_CATEGORY_ORDER[level] ?? SPELL_CATEGORY_ORDER.at(-1), sortKey: level };
+  return [{ label: SPELL_CATEGORY_ORDER[level] ?? SPELL_CATEGORY_ORDER.at(-1), sortKey: level }];
 }
 
 /** Human-readable CR label, matching how dnd5e displays fractional challenge ratings. */
@@ -93,7 +119,7 @@ function crLabel(cr) {
 function monsterCRCategoryFor(doc) {
   const cr = doc.system?.details?.cr;
   if (cr === null || cr === undefined) return null;
-  return { label: crLabel(cr), sortKey: Number(cr) };
+  return [{ label: crLabel(cr), sortKey: Number(cr) }];
 }
 
 /** Monster category: one folder per creature type (Aberration, Beast, Humanoid, ...). */
@@ -101,11 +127,11 @@ function monsterTypeCategoryFor(doc) {
   const type = doc.system?.details?.type?.value;
   if (!type) return null;
   const label = type.charAt(0).toUpperCase() + type.slice(1);
-  return { label, sortKey: label };
+  return [{ label, sortKey: label }];
 }
 
-/** Vehicles aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
-function vehicleCategoryFor() {
+/** Vehicles, Species, Backgrounds, Classes, and Feats aren't sorted into sub-folders yet — always uncategorized (flat, alphabetical). */
+function uncategorized() {
   return null;
 }
 
@@ -137,20 +163,42 @@ async function getOrCreateMergedPack(type, label) {
   return pack;
 }
 
-/** Compare two category sort keys: numeric subtraction for numbers (e.g. CR, spell level), alphabetical otherwise (e.g. creature type, item category name). */
-function compareSortKeys(a, b) {
-  if (typeof a === "number" && typeof b === "number") return a - b;
-  return String(a).localeCompare(String(b));
+/**
+ * Find (creating if needed) the in-compendium folder at the end of `path`, nesting
+ * folders as necessary — e.g. a ["Weapons", "Rare"] path creates (or reuses) a "Rare"
+ * folder living inside a "Weapons" folder. `cache` is scoped to one rebuildPack() run
+ * so repeated calls for the same path don't recreate folders.
+ * @param {CompendiumCollection} pack
+ * @param {CategorySegment[]} path
+ * @param {Map<string, Folder>} cache
+ * @returns {Promise<string>} the leaf folder's id
+ */
+async function ensureFolderPath(pack, path, cache) {
+  let parentId = null;
+  let pathKey = "";
+  for (const segment of path) {
+    pathKey += `>${segment.label}`;
+    if (!cache.has(pathKey)) {
+      const folder = await Folder.create(
+        { name: segment.label, type: pack.documentName, folder: parentId, sort: segment.sortKey * 10000 },
+        { pack: pack.collection }
+      );
+      cache.set(pathKey, folder);
+    }
+    parentId = cache.get(pathKey).id;
+  }
+  return parentId;
 }
 
 /**
  * Wipe every document and folder out of a compendium pack, then insert fresh copies of
- * the given documents, organized into in-compendium folders per `categoryOf(doc)` (e.g.
- * spell level, monster CR/type, or weapon/armor/equipment/...). Documents whose category
- * is null are left uncategorized at the compendium's top level.
+ * the given documents, organized into in-compendium folders (nested where `categoryOf`
+ * returns a multi-segment path, e.g. rarity nested under item category) per
+ * `categoryOf(doc)`. Documents whose category is null are left uncategorized at the
+ * compendium's top level.
  * @param {CompendiumCollection} pack
  * @param {object[]} documents
- * @param {(doc: object) => Category} categoryOf
+ * @param {(doc: object) => CategoryPath} categoryOf
  */
 async function rebuildPack(pack, documents, categoryOf) {
   if (pack.locked) await pack.configure({ locked: false });
@@ -164,29 +212,16 @@ async function rebuildPack(pack, documents, categoryOf) {
     await Folder.deleteDocuments(existingFolders.map(f => f.id), { pack: pack.collection });
   }
 
-  const categoriesByLabel = new Map();
-  for (const doc of documents) {
-    const category = categoryOf(doc);
-    if (category) categoriesByLabel.set(category.label, category.sortKey);
-  }
-  const orderedLabels = [...categoriesByLabel.entries()]
-    .sort((a, b) => compareSortKeys(a[1], b[1]))
-    .map(([label]) => label);
-
-  const folderIdByLabel = new Map();
-  for (const [index, label] of orderedLabels.entries()) {
-    const folder = await Folder.create({ name: label, type: pack.documentName, sort: index * 10000 }, { pack: pack.collection });
-    folderIdByLabel.set(label, folder.id);
-  }
-
+  const folderCache = new Map();
   const sorted = [...documents].sort((a, b) => a.name.localeCompare(b.name));
-  const data = sorted.map(doc => {
+  const data = [];
+  for (const doc of sorted) {
     const obj = doc.toObject();
     delete obj._id;
-    const category = categoryOf(doc);
-    obj.folder = category ? (folderIdByLabel.get(category.label) ?? null) : null;
-    return obj;
-  });
+    const path = categoryOf(doc);
+    obj.folder = path ? await ensureFolderPath(pack, path, folderCache) : null;
+    data.push(obj);
+  }
   if (data.length) {
     await pack.documentClass.createDocuments(data, { pack: pack.collection });
   }
@@ -223,50 +258,74 @@ async function collectByKey(packIds, matchesType, onProgress) {
 }
 
 /**
- * Run a full-rebuild merge. Each category (Items, Spells, Monsters, Vehicles) has its own
- * independent priority-ordered list of source compendiums — a source that's great for
- * spells isn't necessarily the one you want winning for monsters, so priority is set per
- * category rather than once globally. Rebuilds all four "Merged ..." world compendiums
- * from the result.
+ * Run a full-rebuild merge. Each of the eight categories (Items, Spells, Monsters,
+ * Vehicles, Species, Backgrounds, Classes, Feats) has its own independent
+ * priority-ordered list of source compendiums — a source that's great for spells isn't
+ * necessarily the one you want winning for monsters, so priority is set per category
+ * rather than once globally. Rebuilds all eight "Merged ..." world compendiums from the
+ * result.
  * @param {object} params
  * @param {string[]} [params.itemPackIds] highest priority first
  * @param {string[]} [params.spellPackIds] highest priority first
  * @param {string[]} [params.monsterPackIds] highest priority first
  * @param {string[]} [params.vehiclePackIds] highest priority first
+ * @param {string[]} [params.speciesPackIds] highest priority first
+ * @param {string[]} [params.backgroundPackIds] highest priority first
+ * @param {string[]} [params.classPackIds] highest priority first
+ * @param {string[]} [params.featPackIds] highest priority first
  * @param {"cr"|"type"} [params.monsterSortMode]
  * @param {(update: {stage: string, packId?: string}) => void} [onProgress]
- * @returns {Promise<{scanned: number, items: number, spells: number, monsters: number, vehicles: number, skipped: number, packsRead: number}>}
+ * @returns {Promise<{scanned: number, skipped: number, packsRead: number, items: number, spells: number, monsters: number, vehicles: number, species: number, backgrounds: number, classes: number, feats: number}>}
  */
 export async function runMerge({
-  itemPackIds = [], spellPackIds = [], monsterPackIds = [], vehiclePackIds = [], monsterSortMode = "cr"
+  itemPackIds = [], spellPackIds = [], monsterPackIds = [], vehiclePackIds = [],
+  speciesPackIds = [], backgroundPackIds = [], classPackIds = [], featPackIds = [],
+  monsterSortMode = "cr"
 } = {}, onProgress) {
   const items = await collectByKey(itemPackIds, doc => ITEM_TYPES.includes(doc.type), onProgress);
   const spells = await collectByKey(spellPackIds, doc => SPELL_TYPES.includes(doc.type), onProgress);
   const monsters = await collectByKey(monsterPackIds, doc => MONSTER_TYPES.includes(doc.type), onProgress);
   const vehicles = await collectByKey(vehiclePackIds, doc => VEHICLE_TYPES.includes(doc.type), onProgress);
+  const species = await collectByKey(speciesPackIds, doc => SPECIES_TYPES.includes(doc.type), onProgress);
+  const backgrounds = await collectByKey(backgroundPackIds, doc => BACKGROUND_TYPES.includes(doc.type), onProgress);
+  const classes = await collectByKey(classPackIds, doc => CLASS_TYPES.includes(doc.type), onProgress);
+  const feats = await collectByKey(featPackIds, doc => FEAT_TYPES.includes(doc.type), onProgress);
 
   onProgress?.({ stage: "writing" });
   const itemsPack = await getOrCreateMergedPack("Item", "Merged Items");
   const spellsPack = await getOrCreateMergedPack("Item", "Merged Spells");
   const monstersPack = await getOrCreateMergedPack("Actor", "Merged Monsters");
   const vehiclesPack = await getOrCreateMergedPack("Actor", "Merged Vehicles");
+  const speciesPack = await getOrCreateMergedPack("Item", "Merged Species");
+  const backgroundsPack = await getOrCreateMergedPack("Item", "Merged Backgrounds");
+  const classesPack = await getOrCreateMergedPack("Item", "Merged Classes");
+  const featsPack = await getOrCreateMergedPack("Item", "Merged Feats");
 
   const monsterCategoryFor = monsterSortMode === "type" ? monsterTypeCategoryFor : monsterCRCategoryFor;
 
   await rebuildPack(itemsPack, [...items.byKey.values()], itemCategoryFor);
   await rebuildPack(spellsPack, [...spells.byKey.values()], spellCategoryFor);
   await rebuildPack(monstersPack, [...monsters.byKey.values()], monsterCategoryFor);
-  await rebuildPack(vehiclesPack, [...vehicles.byKey.values()], vehicleCategoryFor);
+  await rebuildPack(vehiclesPack, [...vehicles.byKey.values()], uncategorized);
+  await rebuildPack(speciesPack, [...species.byKey.values()], uncategorized);
+  await rebuildPack(backgroundsPack, [...backgrounds.byKey.values()], uncategorized);
+  await rebuildPack(classesPack, [...classes.byKey.values()], uncategorized);
+  await rebuildPack(featsPack, [...feats.byKey.values()], uncategorized);
 
   onProgress?.({ stage: "done" });
 
+  const parts = [items, spells, monsters, vehicles, species, backgrounds, classes, feats];
   return {
-    scanned: items.scanned + spells.scanned + monsters.scanned + vehicles.scanned,
-    skipped: items.skipped + spells.skipped + monsters.skipped + vehicles.skipped,
-    packsRead: items.packsRead + spells.packsRead + monsters.packsRead + vehicles.packsRead,
+    scanned: parts.reduce((sum, part) => sum + part.scanned, 0),
+    skipped: parts.reduce((sum, part) => sum + part.skipped, 0),
+    packsRead: parts.reduce((sum, part) => sum + part.packsRead, 0),
     items: items.byKey.size,
     spells: spells.byKey.size,
     monsters: monsters.byKey.size,
-    vehicles: vehicles.byKey.size
+    vehicles: vehicles.byKey.size,
+    species: species.byKey.size,
+    backgrounds: backgrounds.byKey.size,
+    classes: classes.byKey.size,
+    feats: feats.byKey.size
   };
 }

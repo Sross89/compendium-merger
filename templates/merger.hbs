@@ -87,6 +87,78 @@
   {{/if}}
 </fieldset>
 
+<fieldset>
+  <legend>{{localize "COMPENDIUM-MERGER.App.SpeciesLegend"}}</legend>
+  {{#if species.hasSources}}
+    <div class="cm-source-list">
+      {{#each species.order as |entry|}}
+        <div class="cm-source-row">
+          <input type="checkbox" data-category="species" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-category="species" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-category="species" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
+  {{/if}}
+</fieldset>
+
+<fieldset>
+  <legend>{{localize "COMPENDIUM-MERGER.App.BackgroundsLegend"}}</legend>
+  {{#if backgrounds.hasSources}}
+    <div class="cm-source-list">
+      {{#each backgrounds.order as |entry|}}
+        <div class="cm-source-row">
+          <input type="checkbox" data-category="backgrounds" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-category="backgrounds" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-category="backgrounds" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
+  {{/if}}
+</fieldset>
+
+<fieldset>
+  <legend>{{localize "COMPENDIUM-MERGER.App.ClassesLegend"}}</legend>
+  {{#if classes.hasSources}}
+    <div class="cm-source-list">
+      {{#each classes.order as |entry|}}
+        <div class="cm-source-row">
+          <input type="checkbox" data-category="classes" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-category="classes" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-category="classes" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
+  {{/if}}
+</fieldset>
+
+<fieldset>
+  <legend>{{localize "COMPENDIUM-MERGER.App.FeatsLegend"}}</legend>
+  {{#if feats.hasSources}}
+    <div class="cm-source-list">
+      {{#each feats.order as |entry|}}
+        <div class="cm-source-row">
+          <input type="checkbox" data-category="feats" data-toggle-index="{{entry.index}}" {{#if entry.checked}}checked{{/if}} />
+          <span class="cm-source-label">{{entry.label}}</span>
+          <button type="button" class="cm-move" data-category="feats" data-move-up="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveUp'}}"><i class="fa-solid fa-arrow-up"></i></button>
+          <button type="button" class="cm-move" data-category="feats" data-move-down="{{entry.index}}" title="{{localize 'COMPENDIUM-MERGER.App.MoveDown'}}"><i class="fa-solid fa-arrow-down"></i></button>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="cm-hint">{{localize "COMPENDIUM-MERGER.App.NoItemSources"}}</p>
+  {{/if}}
+</fieldset>
+
 <p class="cm-hint cm-warning">{{localize "COMPENDIUM-MERGER.App.RebuildWarning"}}</p>
 
 {{#if result}}
@@ -98,6 +170,10 @@
   <p>{{localize "COMPENDIUM-MERGER.App.ResultSpells"}}: {{result.spells}}</p>
   <p>{{localize "COMPENDIUM-MERGER.App.ResultMonsters"}}: {{result.monsters}}</p>
   <p>{{localize "COMPENDIUM-MERGER.App.ResultVehicles"}}: {{result.vehicles}}</p>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultSpecies"}}: {{result.species}}</p>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultBackgrounds"}}: {{result.backgrounds}}</p>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultClasses"}}: {{result.classes}}</p>
+  <p>{{localize "COMPENDIUM-MERGER.App.ResultFeats"}}: {{result.feats}}</p>
   <p>{{localize "COMPENDIUM-MERGER.App.ResultSkipped"}}: {{result.skipped}}</p>
 </fieldset>
 {{/if}}

@@ -1,15 +1,25 @@
-import { MODULE_ID, SETTINGS, ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES } from "../constants.js";
+import {
+  MODULE_ID, SETTINGS,
+  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
+  SPECIES_TYPES, BACKGROUND_TYPES, CLASS_TYPES, FEAT_TYPES
+} from "../constants.js";
 import { getPacksFor, getPacksWithType, runMerge } from "../merge.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
-/** The four independently-ordered source categories. */
+/** The eight independently-ordered source categories. */
 const CATEGORIES = {
   items: { settingsKey: SETTINGS.ITEM_SOURCE_ORDER, documentName: "Item", types: ITEM_TYPES },
   spells: { settingsKey: SETTINGS.SPELL_SOURCE_ORDER, documentName: "Item", types: SPELL_TYPES },
   monsters: { settingsKey: SETTINGS.MONSTER_SOURCE_ORDER, documentName: "Actor", types: MONSTER_TYPES },
-  vehicles: { settingsKey: SETTINGS.VEHICLE_SOURCE_ORDER, documentName: "Actor", types: VEHICLE_TYPES }
+  vehicles: { settingsKey: SETTINGS.VEHICLE_SOURCE_ORDER, documentName: "Actor", types: VEHICLE_TYPES },
+  species: { settingsKey: SETTINGS.SPECIES_SOURCE_ORDER, documentName: "Item", types: SPECIES_TYPES },
+  backgrounds: { settingsKey: SETTINGS.BACKGROUND_SOURCE_ORDER, documentName: "Item", types: BACKGROUND_TYPES },
+  classes: { settingsKey: SETTINGS.CLASS_SOURCE_ORDER, documentName: "Item", types: CLASS_TYPES },
+  feats: { settingsKey: SETTINGS.FEAT_SOURCE_ORDER, documentName: "Item", types: FEAT_TYPES }
 };
+
+const CATEGORY_IDS = Object.keys(CATEGORIES);
 
 export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
@@ -68,12 +78,11 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return { hasSources: !!order.length, order: order.map((entry, index) => ({ ...entry, index })) };
     };
 
-    const [items, spells, monsters, vehicles] = await Promise.all([
-      buildSection("items"), buildSection("spells"), buildSection("monsters"), buildSection("vehicles")
-    ]);
+    const sections = await Promise.all(CATEGORY_IDS.map(buildSection));
+    const bySection = Object.fromEntries(CATEGORY_IDS.map((id, index) => [id, sections[index]]));
 
     return {
-      items, spells, monsters, vehicles,
+      ...bySection,
       monsterSortMode: game.settings.get(MODULE_ID, SETTINGS.MONSTER_SORT_MODE) ?? "cr",
       filterEmptySources: game.settings.get(MODULE_ID, SETTINGS.FILTER_EMPTY_SOURCES) ?? false,
       running: this.#running,
@@ -138,11 +147,10 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (this.#running) return;
 
     const checkedIds = async (categoryId) => (await this.#buildOrder(categoryId)).filter(entry => entry.checked).map(entry => entry.id);
-    const [itemPackIds, spellPackIds, monsterPackIds, vehiclePackIds] = await Promise.all([
-      checkedIds("items"), checkedIds("spells"), checkedIds("monsters"), checkedIds("vehicles")
-    ]);
+    const checkedLists = await Promise.all(CATEGORY_IDS.map(checkedIds));
+    const [itemPackIds, spellPackIds, monsterPackIds, vehiclePackIds, speciesPackIds, backgroundPackIds, classPackIds, featPackIds] = checkedLists;
 
-    if (!itemPackIds.length && !spellPackIds.length && !monsterPackIds.length && !vehiclePackIds.length) {
+    if (!checkedLists.some(list => list.length)) {
       ui.notifications.warn(game.i18n.localize("COMPENDIUM-MERGER.Warnings.NoSourcesChecked"));
       return;
     }
@@ -154,13 +162,21 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.render();
 
     try {
-      const result = await runMerge({ itemPackIds, spellPackIds, monsterPackIds, vehiclePackIds, monsterSortMode });
+      const result = await runMerge({
+        itemPackIds, spellPackIds, monsterPackIds, vehiclePackIds,
+        speciesPackIds, backgroundPackIds, classPackIds, featPackIds,
+        monsterSortMode
+      });
       this.#lastResult = result;
       ui.notifications.info(game.i18n.format("COMPENDIUM-MERGER.App.MergeComplete", {
         items: result.items,
         spells: result.spells,
         monsters: result.monsters,
-        vehicles: result.vehicles
+        vehicles: result.vehicles,
+        species: result.species,
+        backgrounds: result.backgrounds,
+        classes: result.classes,
+        feats: result.feats
       }));
     } catch (err) {
       console.error(`${MODULE_ID} | Merge failed`, err);
