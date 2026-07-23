@@ -1,6 +1,26 @@
-import { ITEM_TYPES, SPELL_TYPES, MERGE_FOLDER_NAME } from "./constants.js";
+import { ITEM_TYPES, SPELL_TYPES, MERGE_FOLDER_NAME, ARMOR_SUBTYPES, ITEM_CATEGORY_ORDER } from "./constants.js";
 
 const NO_FOLDER_KEY = "__no-folder__";
+
+const SPELL_CATEGORY_ORDER = ["Cantrips", "1st Level", "2nd Level", "3rd Level", "4th Level", "5th Level", "6th Level", "7th Level", "8th Level", "9th Level"];
+
+/** Which in-compendium folder a merged Item belongs to: Weapons/Armor/Equipment/Consumables/Tools/Loot/Containers. */
+function itemCategoryFor(doc) {
+  if (doc.type === "weapon") return "Weapons";
+  if (doc.type === "consumable") return "Consumables";
+  if (doc.type === "tool") return "Tools";
+  if (doc.type === "loot") return "Loot";
+  if (doc.type === "container") return "Containers";
+  if (doc.type === "equipment") {
+    return ARMOR_SUBTYPES.includes(doc.system?.type?.value) ? "Armor" : "Equipment";
+  }
+  return null;
+}
+
+/** Which in-compendium folder a merged Spell belongs to: Cantrips, 1st Level, ... 9th Level. */
+function spellCategoryFor(doc) {
+  return SPELL_CATEGORY_ORDER[doc.system?.level ?? 0] ?? SPELL_CATEGORY_ORDER.at(-1);
+}
 
 /** Climb from a folder up to its top-most ancestor (a folder with no parent of its own). */
 function getRootFolder(folder) {
@@ -70,19 +90,38 @@ async function getOrCreateMergedPack(label) {
   });
 }
 
-/** Wipe every document out of a compendium pack, then insert fresh copies of the given documents. */
-async function rebuildPack(pack, documents) {
+/**
+ * Wipe every document and folder out of a compendium pack, then insert fresh copies of
+ * the given documents, organized into in-compendium folders per `categoryOf(doc)` (e.g.
+ * spell level, or weapon/armor/equipment/...). Folders are created in `categoryOrder`,
+ * skipping any category nothing actually belongs to; documents with no category (null)
+ * are left uncategorized at the compendium's top level.
+ */
+async function rebuildPack(pack, documents, categoryOf, categoryOrder) {
   if (pack.locked) await pack.configure({ locked: false });
 
   const existingIds = pack.index.map(entry => entry._id);
   if (existingIds.length) {
     await pack.documentClass.deleteDocuments(existingIds, { pack: pack.collection });
   }
+  const existingFolders = pack.folders?.contents ?? [];
+  if (existingFolders.length) {
+    await Folder.deleteDocuments(existingFolders.map(f => f.id), { pack: pack.collection });
+  }
 
-  const data = documents.map(doc => {
+  const present = new Set(documents.map(doc => categoryOf(doc)).filter(Boolean));
+  const folderIdByCategory = new Map();
+  for (const [index, category] of categoryOrder.filter(c => present.has(c)).entries()) {
+    const folder = await Folder.create({ name: category, type: pack.documentName, sort: index * 10000 }, { pack: pack.collection });
+    folderIdByCategory.set(category, folder.id);
+  }
+
+  const sorted = [...documents].sort((a, b) => a.name.localeCompare(b.name));
+  const data = sorted.map(doc => {
     const obj = doc.toObject();
     delete obj._id;
-    delete obj.folder;
+    const category = categoryOf(doc);
+    obj.folder = category ? (folderIdByCategory.get(category) ?? null) : null;
     return obj;
   });
   if (data.length) {
@@ -134,8 +173,8 @@ export async function runMerge(orderedPackIds, onProgress) {
   const itemsPack = await getOrCreateMergedPack("Merged Items");
   const spellsPack = await getOrCreateMergedPack("Merged Spells");
 
-  await rebuildPack(itemsPack, [...itemsByKey.values()]);
-  await rebuildPack(spellsPack, [...spellsByKey.values()]);
+  await rebuildPack(itemsPack, [...itemsByKey.values()], itemCategoryFor, ITEM_CATEGORY_ORDER);
+  await rebuildPack(spellsPack, [...spellsByKey.values()], spellCategoryFor, SPELL_CATEGORY_ORDER);
 
   onProgress?.({ stage: "done" });
 

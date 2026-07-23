@@ -1,7 +1,7 @@
 {
   "COMPENDIUM-MERGER.App.Title": "Compendium Merger",
   "COMPENDIUM-MERGER.App.SidebarButton": "Merge Compendiums",
-  "COMPENDIUM-MERGER.App.ScopeHint": "Merges Item compendiums only, and only Items (weapons/equipment/consumables/tools/loot/containers) and Spells for now — feats, classes, subclasses, backgrounds, and species are left alone and skipped.",
+  "COMPENDIUM-MERGER.App.ScopeHint": "Merges Item compendiums only, and only Items (weapons/equipment/consumables/tools/loot/containers) and Spells for now — feats, classes, subclasses, backgrounds, and species are left alone and skipped. Merged Items are sorted into Weapons/Armor/Equipment/Consumables/Tools/Loot/Containers folders, and Merged Spells into a folder per spell level.",
   "COMPENDIUM-MERGER.App.SourcesLegend": "Source Folders",
   "COMPENDIUM-MERGER.App.NoFolder": "(No Folder)",
   "COMPENDIUM-MERGER.App.NoSources": "No Item compendiums are available. Enable some under your world's Compendium Packs settings first.",

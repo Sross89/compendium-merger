@@ -42,8 +42,8 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
     return ordered;
   }
 
-  #persistOrder(order) {
-    game.settings.set(MODULE_ID, SETTINGS.SOURCE_ORDER, order.map(({ id, checked }) => ({ id, checked })));
+  async #persistOrder(order) {
+    await game.settings.set(MODULE_ID, SETTINGS.SOURCE_ORDER, order.map(({ id, checked }) => ({ id, checked })));
   }
 
   async _prepareContext() {
@@ -65,32 +65,32 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const el = this.element;
 
     el.querySelectorAll("[data-toggle-index]").forEach(checkbox => {
-      checkbox.addEventListener("change", () => {
+      checkbox.addEventListener("change", async () => {
         const order = this.#buildOrder();
         const index = Number(checkbox.dataset.toggleIndex);
         order[index].checked = checkbox.checked;
-        this.#persistOrder(order);
+        await this.#persistOrder(order);
       });
     });
 
     el.querySelectorAll("[data-move-up]").forEach(button => {
-      button.addEventListener("click", () => {
+      button.addEventListener("click", async () => {
         const index = Number(button.dataset.moveUp);
         if (index <= 0) return;
         const order = this.#buildOrder();
         [order[index - 1], order[index]] = [order[index], order[index - 1]];
-        this.#persistOrder(order);
+        await this.#persistOrder(order);
         this.render();
       });
     });
 
     el.querySelectorAll("[data-move-down]").forEach(button => {
-      button.addEventListener("click", () => {
+      button.addEventListener("click", async () => {
         const index = Number(button.dataset.moveDown);
         const order = this.#buildOrder();
         if (index >= order.length - 1) return;
         [order[index], order[index + 1]] = [order[index + 1], order[index]];
-        this.#persistOrder(order);
+        await this.#persistOrder(order);
         this.render();
       });
     });
