@@ -10,6 +10,15 @@ export const ITEM_TYPES = ["weapon", "equipment", "consumable", "tool", "loot", 
 /** dnd5e Item subtypes handled by the "Merged Spells" bucket. */
 export const SPELL_TYPES = ["spell"];
 
+/** dnd5e Actor subtypes handled by the "Merged Monsters" bucket. */
+export const MONSTER_TYPES = ["npc"];
+
+/** dnd5e Actor subtypes handled by the "Merged Vehicles" bucket. */
+export const VEHICLE_TYPES = ["vehicle"];
+
+/** Compendium document types this module scans for source content. Player characters ("character") and encounter "group" actors are intentionally excluded. */
+export const MERGEABLE_DOCUMENT_NAMES = ["Item", "Actor"];
+
 export const MERGE_FOLDER_NAME = "Compendium Merger";
 
 /** dnd5e system.type.value values for "equipment" items that are actually armor, not general equipment. */

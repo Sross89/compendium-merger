@@ -119,7 +119,9 @@ export class MergerApp extends HandlebarsApplicationMixin(ApplicationV2) {
       this.#lastResult = result;
       ui.notifications.info(game.i18n.format("COMPENDIUM-MERGER.App.MergeComplete", {
         items: result.items,
-        spells: result.spells
+        spells: result.spells,
+        monsters: result.monsters,
+        vehicles: result.vehicles
       }));
     } catch (err) {
       console.error(`${MODULE_ID} | Merge failed`, err);
