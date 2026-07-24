@@ -14,8 +14,33 @@ export const SETTINGS = {
   FILTER_EMPTY_SOURCES: "filterEmptySources"
 };
 
-/** dnd5e Item subtypes handled by the "Merged Items" bucket. */
-export const ITEM_TYPES = ["weapon", "equipment", "consumable", "tool", "loot", "container"];
+/**
+ * Cache of Item type -> "is this a physical/inventory item" (weapon, equipment, consumable,
+ * tool, loot, container, and anything a module registers with the same shape), computed
+ * once from the live game system rather than a hardcoded list. This mirrors exactly what
+ * dnd5e's own Item5e.compendiumBrowserTypes() uses to build the Compendium Browser's
+ * "Items" tab: every registered Item.TYPES entry whose data model declares an
+ * "inventorySection" is physical. Reading it this way means a third-party module that
+ * registers its own inventory-style Item type (e.g. Tasha's Cauldron's "Tattoo") is picked
+ * up automatically, with no update needed here when that happens.
+ */
+let physicalItemTypesCache = null;
+
+function getPhysicalItemTypes() {
+  if (physicalItemTypesCache) return physicalItemTypesCache;
+  const types = new Set();
+  for (const type of Item.TYPES) {
+    if ([CONST.BASE_DOCUMENT_TYPE, "backpack"].includes(type)) continue;
+    if ("inventorySection" in (CONFIG.Item.dataModels[type] ?? {})) types.add(type);
+  }
+  physicalItemTypesCache = types;
+  return types;
+}
+
+/** Whether a document belongs in the "Merged Items" bucket — see getPhysicalItemTypes(). */
+export function isPhysicalItemDoc(doc) {
+  return getPhysicalItemTypes().has(doc.type);
+}
 
 /** dnd5e Item subtypes handled by the "Merged Spells" bucket. */
 export const SPELL_TYPES = ["spell"];
@@ -88,7 +113,9 @@ export function isBackgroundDoc(doc) {
 }
 
 export function isClassDoc(doc) {
-  return CLASS_TYPES.includes(doc.type) || (FEATURE_ITEM_TYPES.includes(doc.type) && CLASS_TYPES.includes(featSubtype(doc)));
+  // Class AND subclass features both use subtype "class" — there's no separate "subclass"
+  // subtype value in dnd5e's CONFIG.DND5E.featureTypes.
+  return CLASS_TYPES.includes(doc.type) || (FEATURE_ITEM_TYPES.includes(doc.type) && featSubtype(doc) === "class");
 }
 
 /** A true feat, Epic Boon, or Artificer Infusion — not a class/subclass/species/background/monster feature riding along on the same Item type. See FEAT_SUBTYPE_LABELS for the exact subtypes covered. */
@@ -109,14 +136,41 @@ export function isMonsterFeatureDoc(doc) {
 
 export const MERGE_FOLDER_NAME = "Compendium Merger";
 
-/** dnd5e system.type.value values for "equipment" items that are actually armor, not general equipment. Confirmed against installed content. */
-export const ARMOR_SUBTYPES = ["light", "medium", "heavy", "shield"];
+/**
+ * Whether an "equipment"-type item's subtype counts as armor rather than general
+ * equipment. Reads CONFIG.DND5E.armorTypes live instead of a hardcoded list — that config
+ * object is dnd5e's own source of truth (it's what the character sheet's armor-proficiency
+ * UI uses too), so it already includes subtypes a hand-maintained list previously missed
+ * entirely, like "natural" armor.
+ */
+export function isArmorSubtype(subtype) {
+  return subtype in (CONFIG.DND5E?.armorTypes ?? {});
+}
 
-/** dnd5e system.type.value values for "loot" items that are raw tradeable commodities (herbs, spices, cloth, and the like) rather than generic loot. Confirmed against installed content. */
-export const TRADE_GOOD_SUBTYPES = ["trade"];
+/**
+ * How each of dnd5e's canonical "loot" subtypes (CONFIG.DND5E.lootTypes: art, gear, gem,
+ * junk, material, resource, trade, treasure) is grouped into Merged Items' Trade Goods /
+ * Treasure / Loot folders. dnd5e doesn't group loot subtypes into buckets like this itself
+ * — this mapping is this module's own curation, not something read from the system — but
+ * it's checked against the full live key set below so a subtype this module has never
+ * needed to think about (a future dnd5e addition, or one a homebrew module registers)
+ * still lands somewhere sensible (generic Loot) instead of silently going uncategorized.
+ */
+export const LOOT_CATEGORY_BY_SUBTYPE = {
+  art: "Treasure",
+  gem: "Treasure",
+  treasure: "Treasure",
+  trade: "Trade Goods",
+  material: "Trade Goods",
+  resource: "Trade Goods",
+  gear: "Loot",
+  junk: "Loot"
+};
 
-/** dnd5e system.type.value values for "loot" items that are valuables — art objects, gemstones, and other treasure — rather than generic loot. Confirmed against installed content. */
-export const TREASURE_SUBTYPES = ["art", "gem", "treasure"];
+/** Which Merged Items folder a "loot"-type item's subtype belongs in — see LOOT_CATEGORY_BY_SUBTYPE. Anything not in that curated map (including no subtype at all) falls back to generic "Loot". */
+export function lootCategoryFor(subtype) {
+  return LOOT_CATEGORY_BY_SUBTYPE[subtype] ?? "Loot";
+}
 
 /** In-compendium top-level folder names for "Merged Items", and the order they're created/displayed in. */
 export const ITEM_CATEGORY_ORDER = ["Weapons", "Armor", "Equipment", "Consumables", "Tools", "Trade Goods", "Treasure", "Loot", "Containers"];

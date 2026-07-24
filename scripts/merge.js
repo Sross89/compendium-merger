@@ -1,7 +1,7 @@
 import {
-  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES, SPECIES_TYPES,
-  isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc, featSubtype,
-  MERGE_FOLDER_NAME, ARMOR_SUBTYPES, TRADE_GOOD_SUBTYPES, TREASURE_SUBTYPES, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER,
+  SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES, SPECIES_TYPES,
+  isPhysicalItemDoc, isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc, featSubtype,
+  MERGE_FOLDER_NAME, isArmorSubtype, lootCategoryFor, ITEM_CATEGORY_ORDER, NO_RARITY_CATEGORIES, RARITY_LABELS, RARITY_ORDER,
   FEAT_SUBTYPE_LABELS, FEAT_SUBTYPE_ORDER
 } from "./constants.js";
 
@@ -83,29 +83,38 @@ function raritySortKey(rarity) {
   return index === -1 ? 0 : index;
 }
 
+/** Human-readable folder name for a physical Item type this module doesn't have an explicit bucket for — prefers the type's own localized label (as registered by whatever module declared it) over a raw title-cased fallback. */
+function physicalItemTypeLabel(type) {
+  const key = CONFIG.Item.typeLabels?.[type];
+  if (key) {
+    const localized = game.i18n.localize(key);
+    if (localized !== key) return localized;
+  }
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
 /**
  * Which in-compendium folder path a merged Item belongs to. Top level is
  * Weapons/Armor/Equipment/Consumables/Tools/Trade Goods/Treasure/Loot/Containers;
  * everything except Trade Goods, Treasure, and Loot (mundane commodity buckets) also gets
- * a rarity sub-folder (Mundane/Common/Uncommon/Rare/Very Rare/Legendary/Artifact).
+ * a rarity sub-folder (Mundane/Common/Uncommon/Rare/Very Rare/Legendary/Artifact). Only
+ * called on documents already confirmed physical (isPhysicalItemDoc), so the final `else`
+ * only ever fires for a physical Item type outside dnd5e's own six (e.g. a module-registered
+ * inventory type like Tasha's Cauldron's "Tattoo") — those get their own folder named after
+ * the type instead of silently going uncategorized.
  */
 function itemCategoryFor(doc) {
-  let label = null;
+  let label;
   if (doc.type === "weapon") label = "Weapons";
   else if (doc.type === "consumable") label = "Consumables";
   else if (doc.type === "tool") label = "Tools";
   else if (doc.type === "container") label = "Containers";
-  else if (doc.type === "loot") {
-    const subtype = doc.system?.type?.value;
-    if (TREASURE_SUBTYPES.includes(subtype)) label = "Treasure";
-    else if (TRADE_GOOD_SUBTYPES.includes(subtype)) label = "Trade Goods";
-    else label = "Loot";
-  } else if (doc.type === "equipment") {
-    label = ARMOR_SUBTYPES.includes(doc.system?.type?.value) ? "Armor" : "Equipment";
-  }
-  if (label === null) return null;
+  else if (doc.type === "loot") label = lootCategoryFor(doc.system?.type?.value);
+  else if (doc.type === "equipment") label = isArmorSubtype(doc.system?.type?.value) ? "Armor" : "Equipment";
+  else label = physicalItemTypeLabel(doc.type);
 
-  const path = [{ label, sortKey: ITEM_CATEGORY_ORDER.indexOf(label) }];
+  const orderIndex = ITEM_CATEGORY_ORDER.indexOf(label);
+  const path = [{ label, sortKey: orderIndex === -1 ? ITEM_CATEGORY_ORDER.length : orderIndex }];
   if (!NO_RARITY_CATEGORIES.includes(label)) {
     const rarity = doc.system?.rarity ?? "";
     path.push({ label: rarityLabel(rarity), sortKey: raritySortKey(rarity) });
@@ -337,7 +346,7 @@ export async function runMerge({
   monsterFeaturePackIds = [],
   monsterSortMode = "cr"
 } = {}, onProgress) {
-  const items = await collectByKey(itemPackIds, doc => ITEM_TYPES.includes(doc.type), onProgress);
+  const items = await collectByKey(itemPackIds, isPhysicalItemDoc, onProgress);
   const spells = await collectByKey(spellPackIds, doc => SPELL_TYPES.includes(doc.type), onProgress);
   const monsters = await collectByKey(monsterPackIds, doc => MONSTER_TYPES.includes(doc.type), onProgress);
   const vehicles = await collectByKey(vehiclePackIds, doc => VEHICLE_TYPES.includes(doc.type), onProgress);

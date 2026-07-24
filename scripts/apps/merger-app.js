@@ -1,7 +1,7 @@
 import {
   MODULE_ID, SETTINGS,
-  ITEM_TYPES, SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
-  isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc
+  SPELL_TYPES, MONSTER_TYPES, VEHICLE_TYPES,
+  isPhysicalItemDoc, isSpeciesDoc, isBackgroundDoc, isClassDoc, isFeatDoc, isMonsterFeatureDoc
 } from "../constants.js";
 import { getPacksFor, getPacksWithType, runMerge } from "../merge.js";
 
@@ -9,7 +9,7 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /** The nine independently-ordered source categories, each with a label (for the tab nav) and a `matches` predicate used by the optional content filter. */
 const CATEGORIES = {
-  items: { settingsKey: SETTINGS.ITEM_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.ItemsLegend", matches: doc => ITEM_TYPES.includes(doc.type) },
+  items: { settingsKey: SETTINGS.ITEM_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.ItemsLegend", matches: isPhysicalItemDoc },
   spells: { settingsKey: SETTINGS.SPELL_SOURCE_ORDER, documentName: "Item", label: "COMPENDIUM-MERGER.App.SpellsLegend", matches: doc => SPELL_TYPES.includes(doc.type) },
   monsters: { settingsKey: SETTINGS.MONSTER_SOURCE_ORDER, documentName: "Actor", label: "COMPENDIUM-MERGER.App.MonstersLegend", matches: doc => MONSTER_TYPES.includes(doc.type) },
   vehicles: { settingsKey: SETTINGS.VEHICLE_SOURCE_ORDER, documentName: "Actor", label: "COMPENDIUM-MERGER.App.VehiclesLegend", matches: doc => VEHICLE_TYPES.includes(doc.type) },
